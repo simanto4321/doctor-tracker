@@ -102,6 +102,68 @@ export type NotificationItem = {
   createdAt: string;
 };
 
+export type LabResult = {
+  id: string;
+  testName: string;
+  value: number;
+  unit: string;
+  refLow: number;
+  refHigh: number;
+  abnormal: boolean;
+  collectedAt: string;
+  patient?: { name: string } | string;
+  doctor?: { name: string } | string;
+};
+
+export type Vital = {
+  id: string;
+  recordedAt: string;
+  bloodPressureSys: number;
+  bloodPressureDia: number;
+  heartRate: number;
+  temperatureC: number;
+  spo2: number;
+  weightKg?: number | null;
+  notes?: string;
+};
+
+export type ConditionEvent = {
+  id: string;
+  condition: string;
+  status: string;
+  note?: string;
+  recordedAt: string;
+};
+
+export type DocumentMeta = {
+  id: string;
+  title: string;
+  fileName?: string;
+  category: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  createdAt: string;
+};
+
+export type Referral = {
+  id: string;
+  reason: string;
+  status: string;
+  priority?: string;
+  fromDoctor?: { name: string } | string;
+  toDoctor?: { name: string } | string;
+  patient?: { name: string } | string;
+  createdAt?: string;
+};
+
+export type TimelineNote = {
+  id: string;
+  type: "visit" | "condition" | "lab" | string;
+  at: string;
+  title: string;
+  detail?: string;
+};
+
 export type DashboardStats = {
   totals: {
     doctors: number;

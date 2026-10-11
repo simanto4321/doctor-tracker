@@ -62,8 +62,12 @@ MongoDB (external URI or memory server)
 ```
 
 - **Auth:** login, admin register, forgot/reset password; JWT carries `admin | receptionist | doctor`.
-- **Doctors / patients:** CRUD + edit UI + CSV export + search/filter/pagination.
-- **Audit:** admin-readable log of create/update/delete/login actions.
+- **Doctors / patients:** CRUD + edit UI + CSV export + search/filter/pagination + detail charts.
+- **Scheduling:** appointments with book/reschedule and calendar day view.
+- **Clinical chart:** visits, prescriptions, labs, vitals, condition history, referrals, documents.
+- **Ops:** hospitals/departments, bulk CSV import, soft-delete trash/restore, Cmd+K search, notifications.
+- **Hover insights:** nav + feature titles + row hovers show live stats via `/api/insights/hover/:feature`.
+- **Audit:** admin-readable log of create/update/delete/login/import actions.
 - **Dashboard:** aggregations for totals, patients-per-doctor, condition mix, date trends.
 
 ## Technical decisions
@@ -74,6 +78,26 @@ MongoDB (external URI or memory server)
 ## Design direction
 
 Calm Clinical Teal: light mint canvas, teal primary actions, pastel badges, Fraunces + Plus Jakarta Sans, sidebar operations desk.
+
+## High-value product features
+
+| Feature | Where |
+|---------|--------|
+| Appointments / day view | `/appointments` — book, reschedule, hour grid |
+| Doctor detail + caseload chart | `/doctors/[id]` |
+| Patient chart timeline | `/patients/[id]` — notes, vitals, labs, conditions |
+| Visits / encounters | Log on patient detail; listed on doctor detail |
+| Prescriptions | `/prescriptions` — dosage + refill status |
+| Lab results + trends | `/labs` |
+| Notifications | Header bell — follow-ups, assignments |
+| Global search Cmd+K | Header search / ⌘K |
+| Bulk CSV import | `/import` |
+| Soft delete + restore | Delete → `/trash` (admin) |
+| Hospitals / departments | `/hospitals` + doctor hospital filter |
+| Working hours | Doctor form + detail profile |
+| Referral tracking | `/referrals` |
+| Document uploads | `/documents` (Mongo-backed demo storage) |
+| Hover feature details | Info icons + underlined rows across the app |
 
 ## Assignment polish features
 
@@ -135,3 +159,13 @@ Calm Clinical Teal: light mint canvas, teal primary actions, pastel badges, Frau
 | GET | `/api/patients/export.csv` | Export patients |
 | GET | `/api/audit` | Admin audit trail |
 | GET | `/api/dashboard/stats` | Analytics payload |
+| GET/POST | `/api/appointments` | Schedule / list |
+| PUT | `/api/appointments/:id` | Reschedule / status |
+| GET/POST | `/api/labs` | Lab results |
+| GET | `/api/labs/trends/:patientId` | Lab trend series |
+| GET/POST | `/api/referrals` | Referral tracking |
+| GET/POST | `/api/documents` | Document upload/list |
+| GET | `/api/hospitals` | Hospitals + departments |
+| POST | `/api/import/doctors` · `/patients` | Bulk CSV import |
+| POST | `/api/doctors/:id/restore` · `/patients/:id/restore` | Soft-delete restore |
+| GET | `/api/insights/hover/:feature` | Live hover tooltips |

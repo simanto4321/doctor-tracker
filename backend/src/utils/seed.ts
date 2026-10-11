@@ -6,6 +6,12 @@ import { Appointment } from "../models/Appointment.js";
 import { Visit } from "../models/Visit.js";
 import { Prescription } from "../models/Prescription.js";
 import { Notification } from "../models/Notification.js";
+import { Hospital } from "../models/Hospital.js";
+import { LabResult } from "../models/LabResult.js";
+import { Vital } from "../models/Vital.js";
+import { Referral } from "../models/Referral.js";
+import { DocumentFile } from "../models/DocumentFile.js";
+import { ConditionEvent } from "../models/ConditionEvent.js";
 
 const doctorsSeed = [
   {
@@ -228,6 +234,110 @@ export async function seedDatabase() {
   }));
   await Prescription.insertMany(prescriptions);
 
+  await Hospital.insertMany([
+    {
+      name: "Harborview Medical Center",
+      city: "Seattle",
+      address: "325 9th Ave",
+      phone: "+1 206-555-0100",
+      departments: ["Heart & Vascular", "Primary Care", "Emergency"],
+      bedCount: 420,
+    },
+    {
+      name: "Summit General Hospital",
+      city: "San Francisco",
+      address: "1100 California St",
+      phone: "+1 415-555-0100",
+      departments: ["Neurosciences", "Sports Medicine", "Surgery"],
+      bedCount: 310,
+    },
+    {
+      name: "Lakeside Children's Hospital",
+      city: "Chicago",
+      address: "225 E Chicago Ave",
+      phone: "+1 312-555-0100",
+      departments: ["General Pediatrics", "Pulmonary"],
+      bedCount: 180,
+    },
+    {
+      name: "Coastal Clinic Network",
+      city: "San Diego",
+      address: "880 Harbor Dr",
+      phone: "+1 858-555-0100",
+      departments: ["Skin Health", "Dermatology"],
+      bedCount: 64,
+    },
+  ]);
+
+  const labs = createdPatients.slice(0, 20).flatMap((patient, index) => {
+    const doctor = doctors[index % doctors.length];
+    return [0, 1, 2].map((offset) => {
+      const value = 90 + ((index * 3 + offset * 7) % 40);
+      const refLow = 70;
+      const refHigh = 110;
+      return {
+        patient: patient._id,
+        doctor: doctor._id,
+        testName: ["Glucose", "LDL", "HbA1c", "CRP"][index % 4],
+        value,
+        unit: ["mg/dL", "mg/dL", "%", "mg/L"][index % 4],
+        refLow,
+        refHigh,
+        abnormal: value < refLow || value > refHigh,
+        collectedAt: daysAgo(offset * 10 + (index % 5)),
+        notes: "Seeded lab panel",
+      };
+    });
+  });
+  await LabResult.insertMany(labs);
+
+  const vitals = createdPatients.slice(0, 16).map((patient, index) => ({
+    patient: patient._id,
+    recordedAt: daysAgo(index % 10),
+    heartRate: 62 + (index % 28),
+    bloodPressureSys: 110 + (index % 30),
+    bloodPressureDia: 70 + (index % 15),
+    temperatureC: 36.4 + (index % 10) / 10,
+    spo2: 96 + (index % 4),
+    weightKg: 55 + (index % 35),
+    notes: "Seeded vitals check",
+  }));
+  await Vital.insertMany(vitals);
+
+  const conditionEvents = createdPatients.slice(0, 18).map((patient, index) => ({
+    patient: patient._id,
+    condition: patient.condition,
+    status: ["onset", "stable", "improving", "worsening"][index % 4],
+    note: "Condition timeline event",
+    recordedAt: daysAgo(index + 1),
+  }));
+  await ConditionEvent.insertMany(conditionEvents);
+
+  const referrals = createdPatients.slice(0, 8).map((patient, index) => ({
+    patient: patient._id,
+    fromDoctor: doctors[index % doctors.length]._id,
+    toDoctor: doctors[(index + 1) % doctors.length]._id,
+    reason: "Specialty consult requested",
+    status: index % 3 === 0 ? "accepted" : "pending",
+    priority: index % 4 === 0 ? "urgent" : "routine",
+    notes: "Seeded referral",
+  }));
+  await Referral.insertMany(referrals);
+
+  await DocumentFile.insertMany(
+    createdPatients.slice(0, 6).map((patient, index) => ({
+      title: `${["Consent form", "ID scan", "Clinic report"][index % 3]} — ${patient.name}`,
+      category: (["consent", "id", "report"] as const)[index % 3],
+      patient: patient._id,
+      doctor: doctors[index % doctors.length]._id,
+      fileName: `seed-${index + 1}.txt`,
+      mimeType: "text/plain",
+      sizeBytes: 120,
+      content: `Seeded ${["consent", "id", "report"][index % 3]} document for ${patient.name}.`,
+      uploadedBy: email,
+    }))
+  );
+
   await Notification.insertMany([
     {
       title: "Clinic ready",
@@ -247,10 +357,22 @@ export async function seedDatabase() {
       type: "appointment",
       href: "/appointments",
     },
+    {
+      title: "Abnormal labs",
+      body: "New lab results include abnormal flags — review Labs.",
+      type: "warning",
+      href: "/labs",
+    },
+    {
+      title: "Follow-ups overdue",
+      body: "Some visit follow-up dates are due. Check patient charts.",
+      type: "follow_up",
+      href: "/patients",
+    },
   ]);
 
   console.log(
-    `[seed] Created ${doctors.length} doctors, ${createdPatients.length} patients, appointments/visits/Rx`
+    `[seed] Created ${doctors.length} doctors, ${createdPatients.length} patients, labs/vitals/referrals/docs`
   );
   return {
     adminEmail: email,

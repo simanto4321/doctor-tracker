@@ -5,6 +5,7 @@ import { Download, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AuthGuard } from "@/components/auth-guard";
+import { EntityHover } from "@/components/entity-hover";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -172,11 +173,13 @@ export default function PatientsPage() {
   }
 
   async function onDelete(patient: Patient) {
-    const confirmed = window.confirm(`Delete ${patient.name}? This cannot be undone.`);
+    const confirmed = window.confirm(
+      `Move ${patient.name} to trash? You can restore later from Trash.`
+    );
     if (!confirmed) return;
     try {
       await apiRequest(`/patients/${patient.id}`, { method: "DELETE" });
-      toast.success("Patient deleted");
+      toast.success("Patient moved to trash");
       await loadPatients();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Delete failed");
@@ -186,8 +189,9 @@ export default function PatientsPage() {
   return (
     <AuthGuard>
       <AppShell
+        feature="patients"
         title="Patients"
-        subtitle="Search, filter, edit, and delete patient records across the clinic."
+        subtitle="Search, filter, edit, and soft-delete patient charts across the clinic."
         action={
           <div className="flex gap-2">
             <Button
@@ -349,12 +353,22 @@ export default function PatientsPage() {
                   {items.map((patient) => (
                     <tr key={patient.id}>
                       <td>
-                        <Link
+                        <EntityHover
                           href={`/patients/${patient.id}`}
-                          className="font-semibold text-[var(--accent-strong)] hover:underline"
+                          title={patient.name}
+                          badge={patient.riskFlag || "none"}
+                          lines={[
+                            { label: "Condition", value: patient.condition },
+                            { label: "Doctor", value: doctorName(patient) },
+                            { label: "Age / gender", value: `${patient.age} · ${patient.gender}` },
+                            { label: "Phone", value: patient.phone },
+                            { label: "Risk", value: patient.riskFlag || "none" },
+                          ]}
                         >
-                          {patient.name}
-                        </Link>
+                          <span className="font-semibold text-[var(--accent-strong)] underline decoration-dotted">
+                            {patient.name}
+                          </span>
+                        </EntityHover>
                         <p className="text-xs text-[var(--muted)]">{patient.email}</p>
                       </td>
                       <td>

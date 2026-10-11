@@ -129,7 +129,7 @@ doctorsRouter.get("/:id", async (req, res) => {
     return res.status(404).json({ message: "Doctor not found" });
   }
 
-  const [patients, visits, appointments] = await Promise.all([
+  const [patients, visits, appointments, caseload] = await Promise.all([
     Patient.find({ doctor: doctor._id, deletedAt: null }).sort({ createdAt: -1 }).limit(20).lean(),
     Visit.find({ doctor: doctor._id, deletedAt: null })
       .populate("patient", "name")
@@ -141,6 +141,17 @@ doctorsRouter.get("/:id", async (req, res) => {
       .sort({ startsAt: 1 })
       .limit(10)
       .lean(),
+    Patient.aggregate<{ _id: string; count: number }>([
+      { $match: { doctor: doctor._id, deletedAt: null } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+      { $limit: 8 },
+    ]),
   ]);
 
   return res.json({
@@ -150,6 +161,7 @@ doctorsRouter.get("/:id", async (req, res) => {
     visits: visits.map((v) => ({ ...v, id: v._id })),
     upcomingAppointments: appointments.map((a) => ({ ...a, id: a._id })),
     patientCount: patients.length,
+    caseloadTrend: caseload.map((row) => ({ month: row._id, patients: row.count })),
   });
 });
 

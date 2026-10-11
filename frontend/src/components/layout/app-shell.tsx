@@ -5,7 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
   Bell,
+  Building2,
   CalendarDays,
+  FileUp,
+  FlaskConical,
+  FolderOpen,
+  GitBranchPlus,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -13,6 +18,7 @@ import {
   ScrollText,
   Search,
   Stethoscope,
+  Trash2,
   UserPlus,
   Users,
   X,
@@ -21,29 +27,38 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "@/components/command-palette";
+import { HoverInfo } from "@/components/ui/hover-info";
 import { useAuthStore } from "@/lib/auth-store";
 import { apiRequest } from "@/lib/api";
 import type { NotificationItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/doctors", label: "Doctors", icon: Stethoscope },
-  { href: "/patients", label: "Patients", icon: Users },
-  { href: "/appointments", label: "Appointments", icon: CalendarDays },
-  { href: "/prescriptions", label: "Prescriptions", icon: Pill },
-  { href: "/audit", label: "Audit log", icon: ScrollText, adminOnly: true },
-  { href: "/team", label: "Team", icon: UserPlus, adminOnly: true },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, feature: "dashboard" },
+  { href: "/doctors", label: "Doctors", icon: Stethoscope, feature: "doctors" },
+  { href: "/patients", label: "Patients", icon: Users, feature: "patients" },
+  { href: "/appointments", label: "Appointments", icon: CalendarDays, feature: "appointments" },
+  { href: "/prescriptions", label: "Prescriptions", icon: Pill, feature: "prescriptions" },
+  { href: "/labs", label: "Labs", icon: FlaskConical, feature: "labs" },
+  { href: "/referrals", label: "Referrals", icon: GitBranchPlus, feature: "referrals" },
+  { href: "/hospitals", label: "Hospitals", icon: Building2, feature: "hospitals" },
+  { href: "/documents", label: "Documents", icon: FolderOpen, feature: "documents" },
+  { href: "/import", label: "Import", icon: FileUp, feature: "import" },
+  { href: "/trash", label: "Trash", icon: Trash2, feature: "trash", adminOnly: true },
+  { href: "/audit", label: "Audit log", icon: ScrollText, feature: "audit", adminOnly: true },
+  { href: "/team", label: "Team", icon: UserPlus, feature: "team", adminOnly: true },
 ];
 
 export function AppShell({
   title,
   subtitle,
+  feature,
   action,
   children,
 }: {
   title: string;
   subtitle?: string;
+  feature?: string;
   action?: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -85,35 +100,40 @@ export function AppShell({
 
   const sidebar = (
     <aside className="flex h-full w-72 flex-col border-r border-[var(--border)] bg-[var(--sidebar)] px-4 py-5">
-      <div className="mb-8 flex items-center gap-3 px-2">
+      <div className="mb-6 flex items-center gap-3 px-2">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--accent)] text-white shadow-sm">
           <Activity className="h-5 w-5" />
         </div>
         <div>
-          <p className="font-display text-xl leading-none text-[var(--foreground)]">Doctor Tracker</p>
+          <div className="flex items-center gap-1.5">
+            <p className="font-display text-xl leading-none text-[var(--foreground)]">Doctor Tracker</p>
+            <HoverInfo feature="dashboard" label="Doctor Tracker" side="right" />
+          </div>
           <p className="mt-1 text-xs text-[var(--muted)]">Clinical operations desk</p>
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 overflow-auto">
+      <nav className="flex flex-1 flex-col gap-1 overflow-auto pr-1">
         {visibleNav.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
-                active
-                  ? "bg-[var(--accent-soft)] text-[var(--accent-strong)]"
-                  : "text-[var(--muted)] hover:bg-white hover:text-[var(--foreground)]"
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {item.label}
-            </Link>
+            <div key={item.href} className="flex items-center gap-1">
+              <Link
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+                  active
+                    ? "bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+                    : "text-[var(--muted)] hover:bg-white hover:text-[var(--foreground)]"
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </Link>
+              <HoverInfo feature={item.feature} label={item.label} side="right" />
+            </div>
           );
         })}
       </nav>
@@ -161,36 +181,43 @@ export function AppShell({
                   {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
                 </Button>
                 <div>
-                  <h1 className="font-display text-2xl md:text-3xl">{title}</h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="font-display text-2xl md:text-3xl">{title}</h1>
+                    {feature ? <HoverInfo feature={feature} label={title} /> : null}
+                  </div>
                   {subtitle ? <p className="mt-1 text-sm text-[var(--muted)]">{subtitle}</p> : null}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => window.dispatchEvent(new Event("doctor-tracker:open-search"))}
-                >
-                  <Search className="h-4 w-4" />
-                  <span className="hidden sm:inline">Search</span>
-                  <kbd className="hidden rounded border border-[var(--border)] px-1.5 text-[10px] md:inline">
-                    ⌘K
-                  </kbd>
-                </Button>
-                <div className="relative">
+                <HoverInfo feature="search" label="Global search" side="bottom">
                   <Button
                     variant="secondary"
-                    size="icon"
-                    onClick={() => setBellOpen((v) => !v)}
-                    aria-label="Notifications"
+                    size="sm"
+                    onClick={() => window.dispatchEvent(new Event("doctor-tracker:open-search"))}
                   >
-                    <Bell className="h-4 w-4" />
-                    {unread > 0 ? (
-                      <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--danger)] px-1 text-[10px] text-white">
-                        {unread}
-                      </span>
-                    ) : null}
+                    <Search className="h-4 w-4" />
+                    <span className="hidden sm:inline">Search</span>
+                    <kbd className="hidden rounded border border-[var(--border)] px-1.5 text-[10px] md:inline">
+                      ⌘K
+                    </kbd>
                   </Button>
+                </HoverInfo>
+                <div className="relative">
+                  <HoverInfo feature="notifications" label="Notifications" side="bottom">
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      onClick={() => setBellOpen((v) => !v)}
+                      aria-label="Notifications"
+                    >
+                      <Bell className="h-4 w-4" />
+                      {unread > 0 ? (
+                        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--danger)] px-1 text-[10px] text-white">
+                          {unread}
+                        </span>
+                      ) : null}
+                    </Button>
+                  </HoverInfo>
                   {bellOpen ? (
                     <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-[var(--border)] bg-white p-2 shadow-xl">
                       <div className="mb-2 flex items-center justify-between px-2">
@@ -220,7 +247,9 @@ export function AppShell({
                                 !item.read && "bg-[var(--accent-soft)]/50"
                               )}
                               onClick={async () => {
-                                await apiRequest(`/notifications/${item.id}/read`, { method: "POST" });
+                                await apiRequest(`/notifications/${item.id}/read`, {
+                                  method: "POST",
+                                });
                                 setBellOpen(false);
                                 if (item.href) router.push(item.href);
                               }}

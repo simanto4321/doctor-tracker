@@ -5,6 +5,11 @@ import { Patient } from "../models/Patient.js";
 import { Visit } from "../models/Visit.js";
 import { Prescription } from "../models/Prescription.js";
 import { Appointment } from "../models/Appointment.js";
+import { LabResult } from "../models/LabResult.js";
+import { Vital } from "../models/Vital.js";
+import { ConditionEvent } from "../models/ConditionEvent.js";
+import { DocumentFile } from "../models/DocumentFile.js";
+import { Referral } from "../models/Referral.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { escapeRegex, parseDateRange, parsePagination } from "../utils/parseQuery.js";
 import { writeAudit } from "../utils/audit.js";
@@ -28,7 +33,14 @@ patientsRouter.use(requireAuth);
 patientsRouter.get("/", async (req, res) => {
   const { page, limit, skip } = parsePagination(req.query as Record<string, unknown>);
   const dateFilter = parseDateRange(req.query as Record<string, unknown>);
-  const filter: Record<string, unknown> = { ...dateFilter, deletedAt: null };
+  const includeDeleted = req.query.includeDeleted === "true" && req.auth?.role === "admin";
+  const trashedOnly = includeDeleted && req.query.trashed === "true";
+  const filter: Record<string, unknown> = { ...dateFilter };
+  if (trashedOnly) {
+    filter.deletedAt = { $ne: null };
+  } else if (!includeDeleted) {
+    filter.deletedAt = null;
+  }
 
   const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
   const condition = typeof req.query.condition === "string" ? req.query.condition.trim() : "";
@@ -125,23 +137,69 @@ patientsRouter.get("/:id", async (req, res) => {
     return res.status(404).json({ message: "Patient not found" });
   }
 
-  const [visits, prescriptions, appointments] = await Promise.all([
-    Visit.find({ patient: patient._id, deletedAt: null })
-      .populate("doctor", "name")
-      .sort({ visitedAt: -1 })
-      .limit(20)
-      .lean(),
-    Prescription.find({ patient: patient._id, deletedAt: null })
-      .populate("doctor", "name")
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .lean(),
-    Appointment.find({ patient: patient._id, deletedAt: null })
-      .populate("doctor", "name")
-      .sort({ startsAt: -1 })
-      .limit(20)
-      .lean(),
-  ]);
+  const [visits, prescriptions, appointments, labs, vitals, conditionHistory, documents, referrals] =
+    await Promise.all([
+      Visit.find({ patient: patient._id, deletedAt: null })
+        .populate("doctor", "name")
+        .sort({ visitedAt: -1 })
+        .limit(20)
+        .lean(),
+      Prescription.find({ patient: patient._id, deletedAt: null })
+        .populate("doctor", "name")
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .lean(),
+      Appointment.find({ patient: patient._id, deletedAt: null })
+        .populate("doctor", "name")
+        .sort({ startsAt: -1 })
+        .limit(20)
+        .lean(),
+      LabResult.find({ patient: patient._id, deletedAt: null })
+        .populate("doctor", "name")
+        .sort({ collectedAt: -1 })
+        .limit(20)
+        .lean(),
+      Vital.find({ patient: patient._id, deletedAt: null }).sort({ recordedAt: -1 }).limit(20).lean(),
+      ConditionEvent.find({ patient: patient._id, deletedAt: null })
+        .sort({ recordedAt: -1 })
+        .limit(20)
+        .lean(),
+      DocumentFile.find({ patient: patient._id, deletedAt: null })
+        .select("-content")
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .lean(),
+      Referral.find({ patient: patient._id, deletedAt: null })
+        .populate("fromDoctor", "name")
+        .populate("toDoctor", "name")
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+    ]);
+
+  const notesTimeline = [
+    ...visits.map((v) => ({
+      id: String(v._id),
+      type: "visit" as const,
+      at: v.visitedAt,
+      title: v.diagnosis,
+      detail: v.notes || v.treatment || "",
+    })),
+    ...conditionHistory.map((c) => ({
+      id: String(c._id),
+      type: "condition" as const,
+      at: c.recordedAt,
+      title: `${c.condition} · ${c.status}`,
+      detail: c.note || "",
+    })),
+    ...labs.map((l) => ({
+      id: String(l._id),
+      type: "lab" as const,
+      at: l.collectedAt,
+      title: `${l.testName}: ${l.value}${l.unit}`,
+      detail: l.abnormal ? "Abnormal flag" : "Within reference range",
+    })),
+  ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
   return res.json({
     ...patient,
@@ -149,6 +207,12 @@ patientsRouter.get("/:id", async (req, res) => {
     visits: visits.map((v) => ({ ...v, id: v._id })),
     prescriptions: prescriptions.map((p) => ({ ...p, id: p._id })),
     appointments: appointments.map((a) => ({ ...a, id: a._id })),
+    labs: labs.map((l) => ({ ...l, id: l._id })),
+    vitals: vitals.map((v) => ({ ...v, id: v._id })),
+    conditionHistory: conditionHistory.map((c) => ({ ...c, id: c._id })),
+    documents: documents.map((d) => ({ ...d, id: d._id })),
+    referrals: referrals.map((r) => ({ ...r, id: r._id })),
+    notesTimeline,
   });
 });
 

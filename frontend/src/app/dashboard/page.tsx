@@ -79,6 +79,7 @@ export default function DashboardPage() {
   return (
     <AuthGuard>
       <AppShell
+        feature="dashboard"
         title="Dashboard"
         subtitle="Caseload, specialty mix, and patient intake at a glance."
       >

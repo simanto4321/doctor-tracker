@@ -2,10 +2,21 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { useEffect, useState } from "react";
 import { AuthGuard } from "@/components/auth-guard";
+import { EntityHover } from "@/components/entity-hover";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
+import { FeatureTitle } from "@/components/ui/hover-info";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { apiRequest } from "@/lib/api";
 import type { Appointment, Doctor, Patient, Visit } from "@/lib/types";
@@ -15,6 +26,7 @@ type DoctorDetail = Doctor & {
   patients: Patient[];
   visits: Visit[];
   upcomingAppointments: Appointment[];
+  caseloadTrend?: Array<{ month: string; patients: number }>;
 };
 
 export default function DoctorDetailPage() {
@@ -43,8 +55,9 @@ export default function DoctorDetailPage() {
   return (
     <AuthGuard>
       <AppShell
+        feature="doctors"
         title={doctor?.name || "Doctor"}
-        subtitle="Profile, caseload, upcoming appointments, and recent visits."
+        subtitle="Profile, caseload trend, patient history, and schedule."
         action={
           <Link href="/doctors" className="text-sm font-semibold text-[var(--accent-strong)]">
             ← Back to doctors
@@ -87,43 +100,106 @@ export default function DoctorDetailPage() {
                 <p className="font-display text-4xl text-[var(--accent-strong)]">
                   {doctor.patients?.length || 0}
                 </p>
+                <p className="mt-2 text-xs text-[var(--muted)]">
+                  Working hours: {doctor.workingHours || "Not set"}
+                </p>
+              </div>
+            </div>
+
+            <div className="panel p-5">
+              <FeatureTitle
+                feature="doctors"
+                title="Caseload chart"
+                subtitle="Patients assigned by intake month."
+              />
+              <div className="mt-4 h-64">
+                {(doctor.caseloadTrend || []).length === 0 ? (
+                  <p className="text-sm text-[var(--muted)]">No caseload trend yet.</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={doctor.caseloadTrend}>
+                      <defs>
+                        <linearGradient id="caseloadFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#0f766e" stopOpacity={0.35} />
+                          <stop offset="100%" stopColor="#0f766e" stopOpacity={0.02} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid stroke="#d7e5df" vertical={false} />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#5d746d" }} />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#5d746d" }} />
+                      <Tooltip />
+                      <Area
+                        type="monotone"
+                        dataKey="patients"
+                        stroke="#0f766e"
+                        fill="url(#caseloadFill)"
+                        strokeWidth={2.5}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
 
             <div className="grid gap-6 xl:grid-cols-2">
               <div className="panel p-5">
-                <h2 className="font-display text-xl">Patients</h2>
+                <FeatureTitle feature="patients" title="Patients" subtitle="Hover a name for chart basics." />
                 <div className="mt-4 space-y-2">
                   {(doctor.patients || []).map((patient) => (
-                    <Link
+                    <EntityHover
                       key={patient.id}
                       href={`/patients/${patient.id}`}
-                      className="flex items-center justify-between rounded-xl border border-[var(--border)] px-3 py-2 hover:bg-[var(--surface-soft)]"
+                      title={patient.name}
+                      badge={patient.riskFlag || "none"}
+                      lines={[
+                        { label: "Condition", value: patient.condition },
+                        { label: "Age", value: `${patient.age} yrs` },
+                        { label: "Gender", value: patient.gender },
+                        { label: "Phone", value: patient.phone },
+                      ]}
                     >
-                      <span className="font-semibold">{patient.name}</span>
-                      <Badge tone="info">{patient.condition}</Badge>
-                    </Link>
+                      <div className="flex w-full items-center justify-between rounded-xl border border-[var(--border)] px-3 py-2 hover:bg-[var(--surface-soft)]">
+                        <span className="font-semibold underline decoration-dotted">{patient.name}</span>
+                        <Badge tone="info">{patient.condition}</Badge>
+                      </div>
+                    </EntityHover>
                   ))}
                 </div>
               </div>
               <div className="panel p-5">
-                <h2 className="font-display text-xl">Upcoming appointments</h2>
+                <FeatureTitle
+                  feature="appointments"
+                  title="Upcoming appointments"
+                  subtitle="Next scheduled visits for this clinician."
+                />
                 <div className="mt-4 space-y-2">
                   {(doctor.upcomingAppointments || []).length === 0 ? (
                     <p className="text-sm text-[var(--muted)]">No upcoming appointments.</p>
                   ) : (
                     doctor.upcomingAppointments.map((item) => (
-                      <div
+                      <EntityHover
                         key={item.id}
-                        className="rounded-xl border border-[var(--border)] px-3 py-2 text-sm"
+                        title={
+                          typeof item.patient === "object"
+                            ? item.patient?.name || "Patient"
+                            : "Patient"
+                        }
+                        badge={item.status}
+                        lines={[
+                          { label: "When", value: new Date(item.startsAt).toLocaleString() },
+                          { label: "Reason", value: item.reason || "Visit" },
+                          { label: "Status", value: item.status },
+                        ]}
                       >
-                        <p className="font-semibold">
-                          {typeof item.patient === "object" ? item.patient?.name : "Patient"}
-                        </p>
-                        <p className="text-[var(--muted)]">
-                          {new Date(item.startsAt).toLocaleString()} · {item.status}
-                        </p>
-                      </div>
+                        <div className="rounded-xl border border-[var(--border)] px-3 py-2 text-sm">
+                          <p className="font-semibold underline decoration-dotted">
+                            {typeof item.patient === "object" ? item.patient?.name : "Patient"}
+                          </p>
+                          <p className="text-[var(--muted)]">
+                            {new Date(item.startsAt).toLocaleString()} · {item.status}
+                          </p>
+                        </div>
+                      </EntityHover>
                     ))
                   )}
                 </div>
@@ -131,22 +207,37 @@ export default function DoctorDetailPage() {
             </div>
 
             <div className="panel p-5">
-              <h2 className="font-display text-xl">Recent visits</h2>
+              <FeatureTitle feature="appointments" title="Recent visits" subtitle="Encounter records with diagnosis and follow-up." />
               <div className="mt-4 space-y-2">
                 {(doctor.visits || []).map((visit) => (
-                  <div
+                  <EntityHover
                     key={visit.id}
-                    className="rounded-xl border border-[var(--border)] px-3 py-2 text-sm"
+                    title={visit.diagnosis}
+                    badge={visit.followUpAt ? "Follow-up" : "Visit"}
+                    lines={[
+                      { label: "Date", value: formatDate(visit.visitedAt) },
+                      {
+                        label: "Patient",
+                        value: typeof visit.patient === "object" ? visit.patient?.name || "—" : "—",
+                      },
+                      { label: "Treatment", value: visit.treatment || "—" },
+                      {
+                        label: "Follow-up",
+                        value: visit.followUpAt ? formatDate(visit.followUpAt) : "None",
+                      },
+                    ]}
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-semibold">{visit.diagnosis}</p>
-                      <span className="text-[var(--muted)]">{formatDate(visit.visitedAt)}</span>
+                    <div className="rounded-xl border border-[var(--border)] px-3 py-2 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-semibold underline decoration-dotted">{visit.diagnosis}</p>
+                        <span className="text-[var(--muted)]">{formatDate(visit.visitedAt)}</span>
+                      </div>
+                      <p className="text-[var(--muted)]">
+                        {typeof visit.patient === "object" ? visit.patient?.name : "Patient"} ·{" "}
+                        {visit.treatment || "No treatment notes"}
+                      </p>
                     </div>
-                    <p className="text-[var(--muted)]">
-                      {typeof visit.patient === "object" ? visit.patient?.name : "Patient"} ·{" "}
-                      {visit.treatment || "No treatment notes"}
-                    </p>
-                  </div>
+                  </EntityHover>
                 ))}
               </div>
             </div>

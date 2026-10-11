@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { AuthGuard } from "@/components/auth-guard";
+import { EntityHover } from "@/components/entity-hover";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,7 @@ export default function PrescriptionsPage() {
   return (
     <AuthGuard>
       <AppShell
+        feature="prescriptions"
         title="Prescriptions"
         subtitle="Track active meds and refill-due alerts."
         action={
@@ -126,7 +128,29 @@ export default function PrescriptionsPage() {
               <tbody>
                 {items.map((rx) => (
                   <tr key={rx.id}>
-                    <td className="font-semibold">{rx.medication}</td>
+                    <td>
+                      <EntityHover
+                        title={rx.medication}
+                        badge={rx.status}
+                        lines={[
+                          {
+                            label: "Patient",
+                            value: typeof rx.patient === "object" ? rx.patient?.name || "—" : "—",
+                          },
+                          {
+                            label: "Doctor",
+                            value: typeof rx.doctor === "object" ? rx.doctor?.name || "—" : "—",
+                          },
+                          { label: "Dosage", value: rx.dosage },
+                          { label: "Frequency", value: rx.frequency },
+                          { label: "Status", value: rx.status },
+                        ]}
+                      >
+                        <span className="font-semibold underline decoration-dotted">
+                          {rx.medication}
+                        </span>
+                      </EntityHover>
+                    </td>
                     <td>{typeof rx.patient === "object" ? rx.patient?.name : "—"}</td>
                     <td>{typeof rx.doctor === "object" ? rx.doctor?.name : "—"}</td>
                     <td className="text-sm text-[var(--muted)]">

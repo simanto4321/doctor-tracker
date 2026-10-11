@@ -5,6 +5,7 @@ import { Download, Pencil, Plus, Search, Trash2, UserPlus, Users } from "lucide-
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AuthGuard } from "@/components/auth-guard";
+import { EntityHover } from "@/components/entity-hover";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -222,6 +223,7 @@ export default function DoctorsPage() {
   return (
     <AuthGuard>
       <AppShell
+        feature="doctors"
         title="Doctors"
         subtitle="Create, edit, export, and manage each clinician’s caseload."
         action={
@@ -368,12 +370,22 @@ export default function DoctorsPage() {
                   {items.map((doctor) => (
                     <tr key={doctor.id}>
                       <td>
-                        <Link
+                        <EntityHover
                           href={`/doctors/${doctor.id}`}
-                          className="font-semibold text-[var(--accent-strong)] hover:underline"
+                          title={doctor.name}
+                          badge={doctor.specialization}
+                          lines={[
+                            { label: "Hospital", value: doctor.hospital },
+                            { label: "Department", value: doctor.department || "—" },
+                            { label: "Hours", value: doctor.workingHours || "—" },
+                            { label: "Patients", value: String(doctor.patientCount || 0) },
+                            { label: "Phone", value: doctor.phone },
+                          ]}
                         >
-                          {doctor.name}
-                        </Link>
+                          <span className="font-semibold text-[var(--accent-strong)] underline decoration-dotted">
+                            {doctor.name}
+                          </span>
+                        </EntityHover>
                         <p className="text-xs text-[var(--muted)]">{doctor.email}</p>
                       </td>
                       <td>

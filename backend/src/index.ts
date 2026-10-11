@@ -15,6 +15,13 @@ import { prescriptionsRouter } from "./routes/prescriptions.js";
 import { notificationsRouter } from "./routes/notifications.js";
 import { searchRouter } from "./routes/search.js";
 import { auditRouter } from "./routes/audit.js";
+import { labsRouter } from "./routes/labs.js";
+import { referralsRouter } from "./routes/referrals.js";
+import { documentsRouter } from "./routes/documents.js";
+import { hospitalsRouter } from "./routes/hospitals.js";
+import { vitalsRouter } from "./routes/vitals.js";
+import { importRouter } from "./routes/import.js";
+import { insightsRouter } from "./routes/insights.js";
 import { seedDatabase } from "./utils/seed.js";
 
 const app = express();
@@ -28,7 +35,7 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 
@@ -45,6 +52,13 @@ app.use("/api/prescriptions", prescriptionsRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/search", searchRouter);
 app.use("/api/audit", auditRouter);
+app.use("/api/labs", labsRouter);
+app.use("/api/referrals", referralsRouter);
+app.use("/api/documents", documentsRouter);
+app.use("/api/hospitals", hospitalsRouter);
+app.use("/api/vitals", vitalsRouter);
+app.use("/api/import", importRouter);
+app.use("/api/insights", insightsRouter);
 app.use("/api/dashboard", dashboardRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
