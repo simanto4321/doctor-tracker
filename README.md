@@ -2,11 +2,11 @@
 
 Secure administrative web app for managing doctors, their patients, and clinic analytics.
 
-## Elevator pitch
+## Description
 
 Doctor Tracker is a calm clinical operations desk: authenticated staff sign in with role-based access, manage doctor and patient registries with search/filter/pagination/CSV export, and read caseload insights from a Recharts-powered dashboard — all over a REST API backed by MongoDB.
 
-## Setup guide
+## Setup Guide
 
 ### Prerequisites
 
@@ -72,7 +72,7 @@ Email verify demo: `/verify-email` (token from register response / outbox when S
 
 See `.env.example`, `backend/.env.example`, and `frontend/.env.example`.
 
-## System architecture
+## System Architecture
 
 ```
 Browser (Next.js :4317)
@@ -96,7 +96,7 @@ MongoDB Atlas (or memory server) + optional Redis + SMTP outbox
 - **Audit:** admin-readable log of create/update/delete/login/import actions.
 - **Dashboard:** date-range picker, hospital/specialty filters, gender & age charts, specialization heatmap, hospital comparison, doctor utilization, PNG/PDF export, saved presets (cached aggregations).
 
-## Technical decisions
+## Technical Decisions
 
 1. **Split Next.js + Express** — Matches the REST client/server requirement, keeps API validation and Mongo indexing outside the UI bundle, and lets frontend/API scale independently.
 2. **RBAC in JWT + route guards** — Role is signed into the token and enforced with `requireRole` on mutating endpoints; the UI also hides create/edit/admin nav for non-admin/receptionist users so demos make the permission model obvious.
@@ -148,7 +148,7 @@ Calm Clinical Teal: light mint canvas, teal primary actions, pastel badges, Frau
 | Role-based access | JWT roles + API `requireRole` + UI gating |
 | Audit log | `/audit` (admin) |
 
-## Visual evidence
+## Visual Evidence
 
 ### Desktop
 
@@ -208,3 +208,13 @@ Calm Clinical Teal: light mint canvas, teal primary actions, pastel badges, Frau
 | POST | `/api/import/doctors` · `/patients` | Bulk CSV import |
 | POST | `/api/doctors/:id/restore` · `/patients/:id/restore` | Soft-delete restore |
 | GET | `/api/insights/hover/:feature` | Live hover tooltips |
+
+## Submission
+
+- **GitHub:** https://github.com/simanto4321/doctor-tracker
+- **Demo credentials** (if required for review):
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@doctortracker.com` | `Admin@123` |
+| Receptionist | `front.desk@doctortracker.com` | `Desk@123` |
