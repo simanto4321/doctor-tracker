@@ -170,35 +170,17 @@ Calm Clinical Teal: light mint canvas, teal primary actions, pastel badges, Frau
 
 ### Mobile
 
-Phone-framed captures at iPhone scale (light + dark).
+Compact phone frames (light | dark). Images are resized for GitHub README fit.
 
-**Light**
+| Login | Dashboard | Filters |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/mobile-login.png" alt="Mobile login light" width="180" /> | <img src="docs/screenshots/mobile-dashboard.png" alt="Mobile dashboard light" width="180" /> | <img src="docs/screenshots/mobile-dashboard-top.png" alt="Mobile filters light" width="180" /> |
+| <img src="docs/screenshots/mobile-login-dark.png" alt="Mobile login dark" width="180" /> | <img src="docs/screenshots/mobile-dashboard-dark.png" alt="Mobile dashboard dark" width="180" /> | <img src="docs/screenshots/mobile-dashboard-top-dark.png" alt="Mobile filters dark" width="180" /> |
 
-![Mobile login](docs/screenshots/mobile-login.png)
-
-![Mobile dashboard](docs/screenshots/mobile-dashboard.png)
-
-![Mobile analytics filters](docs/screenshots/mobile-dashboard-top.png)
-
-![Mobile doctors](docs/screenshots/mobile-doctors.png)
-
-![Mobile patients](docs/screenshots/mobile-patients.png)
-
-![Mobile audit](docs/screenshots/mobile-audit.png)
-
-**Dark**
-
-![Mobile login dark](docs/screenshots/mobile-login-dark.png)
-
-![Mobile dashboard dark](docs/screenshots/mobile-dashboard-dark.png)
-
-![Mobile analytics filters dark](docs/screenshots/mobile-dashboard-top-dark.png)
-
-![Mobile doctors dark](docs/screenshots/mobile-doctors-dark.png)
-
-![Mobile patients dark](docs/screenshots/mobile-patients-dark.png)
-
-![Mobile audit dark](docs/screenshots/mobile-audit-dark.png)
+| Doctors | Patients | Audit |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/mobile-doctors.png" alt="Mobile doctors light" width="180" /> | <img src="docs/screenshots/mobile-patients.png" alt="Mobile patients light" width="180" /> | <img src="docs/screenshots/mobile-audit.png" alt="Mobile audit light" width="180" /> |
+| <img src="docs/screenshots/mobile-doctors-dark.png" alt="Mobile doctors dark" width="180" /> | <img src="docs/screenshots/mobile-patients-dark.png" alt="Mobile patients dark" width="180" /> | <img src="docs/screenshots/mobile-audit-dark.png" alt="Mobile audit dark" width="180" /> |
 
 ## API map (core)
 
