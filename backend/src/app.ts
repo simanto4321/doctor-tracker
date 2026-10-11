@@ -76,6 +76,28 @@ export function createApp() {
   app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
   app.use(globalLimiter);
 
+  app.get("/", (_req, res) => {
+    res.json({
+      status: "ok",
+      service: "doctor-tracker-api",
+      message: "Doctor Tracker API is live",
+      health: "/api/health",
+      docs: "/api/docs",
+      openapi: "/api/openapi.json",
+      authLogin: "POST /api/auth/login",
+    });
+  });
+
+  app.get("/api", (_req, res) => {
+    res.json({
+      status: "ok",
+      service: "doctor-tracker-api",
+      message: "Doctor Tracker REST API",
+      health: "/api/health",
+      docs: "/api/docs",
+    });
+  });
+
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", service: "doctor-tracker-api" });
   });
