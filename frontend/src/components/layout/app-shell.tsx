@@ -11,13 +11,16 @@ import {
   FlaskConical,
   FolderOpen,
   GitBranchPlus,
+  Languages,
   LayoutDashboard,
   LogOut,
   Menu,
+  Moon,
   Pill,
   ScrollText,
   Search,
   Stethoscope,
+  Sun,
   Trash2,
   UserPlus,
   Users,
@@ -30,23 +33,25 @@ import { CommandPalette } from "@/components/command-palette";
 import { HoverInfo } from "@/components/ui/hover-info";
 import { useAuthStore } from "@/lib/auth-store";
 import { apiRequest } from "@/lib/api";
+import { useI18n, type Locale } from "@/lib/i18n";
+import { useThemeStore } from "@/lib/theme-store";
 import type { NotificationItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, feature: "dashboard" },
-  { href: "/doctors", label: "Doctors", icon: Stethoscope, feature: "doctors" },
-  { href: "/patients", label: "Patients", icon: Users, feature: "patients" },
-  { href: "/appointments", label: "Appointments", icon: CalendarDays, feature: "appointments" },
-  { href: "/prescriptions", label: "Prescriptions", icon: Pill, feature: "prescriptions" },
-  { href: "/labs", label: "Labs", icon: FlaskConical, feature: "labs" },
-  { href: "/referrals", label: "Referrals", icon: GitBranchPlus, feature: "referrals" },
-  { href: "/hospitals", label: "Hospitals", icon: Building2, feature: "hospitals" },
-  { href: "/documents", label: "Documents", icon: FolderOpen, feature: "documents" },
-  { href: "/import", label: "Import", icon: FileUp, feature: "import" },
-  { href: "/trash", label: "Trash", icon: Trash2, feature: "trash", adminOnly: true },
-  { href: "/audit", label: "Audit log", icon: ScrollText, feature: "audit", adminOnly: true },
-  { href: "/team", label: "Team", icon: UserPlus, feature: "team", adminOnly: true },
+  { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, feature: "dashboard" },
+  { href: "/doctors", labelKey: "nav.doctors", icon: Stethoscope, feature: "doctors" },
+  { href: "/patients", labelKey: "nav.patients", icon: Users, feature: "patients" },
+  { href: "/appointments", labelKey: "nav.appointments", icon: CalendarDays, feature: "appointments" },
+  { href: "/prescriptions", labelKey: "nav.prescriptions", icon: Pill, feature: "prescriptions" },
+  { href: "/labs", labelKey: "nav.labs", icon: FlaskConical, feature: "labs" },
+  { href: "/referrals", labelKey: "nav.referrals", icon: GitBranchPlus, feature: "referrals" },
+  { href: "/hospitals", labelKey: "nav.hospitals", icon: Building2, feature: "hospitals" },
+  { href: "/documents", labelKey: "nav.documents", icon: FolderOpen, feature: "documents" },
+  { href: "/import", labelKey: "nav.import", icon: FileUp, feature: "import" },
+  { href: "/trash", labelKey: "nav.trash", icon: Trash2, feature: "trash", adminOnly: true },
+  { href: "/audit", labelKey: "nav.audit", icon: ScrollText, feature: "audit", adminOnly: true },
+  { href: "/team", labelKey: "nav.team", icon: UserPlus, feature: "team", adminOnly: true },
 ];
 
 export function AppShell({
@@ -66,6 +71,9 @@ export function AppShell({
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const clearSession = useAuthStore((s) => s.clearSession);
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const { t, locale, setLocale } = useI18n();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
@@ -73,7 +81,7 @@ export function AppShell({
 
   function logout() {
     clearSession();
-    toast.success("Signed out");
+    toast.success(t("toast.signedOut"));
     router.replace("/login");
   }
 
@@ -99,52 +107,57 @@ export function AppShell({
   const visibleNav = nav.filter((item) => !item.adminOnly || user?.role === "admin");
 
   const sidebar = (
-    <aside className="flex h-full w-72 flex-col border-r border-[var(--border)] bg-[var(--sidebar)] px-4 py-5">
+    <aside
+      className="flex h-full w-72 flex-col border-r border-[var(--border)] bg-[var(--sidebar)] px-4 py-5"
+      aria-label="Primary"
+    >
       <div className="mb-6 flex items-center gap-3 px-2">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--accent)] text-white shadow-sm">
-          <Activity className="h-5 w-5" />
+          <Activity className="h-5 w-5" aria-hidden />
         </div>
         <div>
           <div className="flex items-center gap-1.5">
-            <p className="font-display text-xl leading-none text-[var(--foreground)]">Doctor Tracker</p>
-            <HoverInfo feature="dashboard" label="Doctor Tracker" side="right" />
+            <p className="font-display text-xl leading-none text-[var(--foreground)]">{t("app.name")}</p>
+            <HoverInfo feature="dashboard" label={t("app.name")} side="right" />
           </div>
-          <p className="mt-1 text-xs text-[var(--muted)]">Clinical operations desk</p>
+          <p className="mt-1 text-xs text-[var(--muted)]">{t("app.tagline")}</p>
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 overflow-auto pr-1">
+      <nav className="flex flex-1 flex-col gap-1 overflow-auto pr-1" aria-label="Main">
         {visibleNav.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
+          const label = t(item.labelKey);
           return (
             <div key={item.href} className="flex items-center gap-1">
               <Link
                 href={item.href}
                 onClick={() => setOpen(false)}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
                   active
                     ? "bg-[var(--accent-soft)] text-[var(--accent-strong)]"
-                    : "text-[var(--muted)] hover:bg-white hover:text-[var(--foreground)]"
+                    : "text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--foreground)]"
                 )}
               >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{item.label}</span>
+                <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="truncate">{label}</span>
               </Link>
-              <HoverInfo feature={item.feature} label={item.label} side="right" />
+              <HoverInfo feature={item.feature} label={label} side="right" />
             </div>
           );
         })}
       </nav>
 
-      <div className="mt-4 rounded-2xl border border-[var(--border)] bg-white p-4">
+      <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
         <p className="text-sm font-semibold text-[var(--foreground)]">{user?.name || "Admin"}</p>
         <p className="mt-1 truncate text-xs text-[var(--muted)]">{user?.email}</p>
         <p className="mt-1 text-xs capitalize text-[var(--accent-strong)]">{user?.role}</p>
         <Button variant="secondary" className="mt-4 w-full" onClick={logout}>
-          <LogOut className="h-4 w-4" />
-          Sign out
+          <LogOut className="h-4 w-4" aria-hidden />
+          {t("action.signOut")}
         </Button>
       </div>
     </aside>
@@ -152,6 +165,9 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      <a href="#main-content" className="skip-link">
+        {t("a11y.skip")}
+      </a>
       <CommandPalette />
       <div className="mx-auto flex min-h-screen max-w-[1500px]">
         <div className="hidden lg:block">{sidebar}</div>
@@ -177,6 +193,7 @@ export function AppShell({
                   className="lg:hidden"
                   onClick={() => setOpen(true)}
                   aria-label="Open menu"
+                  aria-expanded={open}
                 >
                   {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
                 </Button>
@@ -188,15 +205,41 @@ export function AppShell({
                   {subtitle ? <p className="mt-1 text-sm text-[var(--muted)]">{subtitle}</p> : null}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <HoverInfo feature="search" label="Global search" side="bottom">
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={toggleTheme}
+                  aria-label={t("action.theme")}
+                  title={`${t("theme.light")} / ${t("theme.dark")}`}
+                >
+                  {theme === "dark" ? (
+                    <Sun className="h-4 w-4" aria-hidden />
+                  ) : (
+                    <Moon className="h-4 w-4" aria-hidden />
+                  )}
+                </Button>
+                <label className="inline-flex items-center gap-1">
+                  <span className="sr-only">{t("action.language")}</span>
+                  <Languages className="h-4 w-4 text-[var(--muted)]" aria-hidden />
+                  <select
+                    className="h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-2 text-sm font-semibold text-[var(--foreground)]"
+                    value={locale}
+                    onChange={(e) => setLocale(e.target.value as Locale)}
+                    aria-label={t("action.language")}
+                  >
+                    <option value="en">EN</option>
+                    <option value="es">ES</option>
+                  </select>
+                </label>
+                <HoverInfo feature="search" label={t("action.search")} side="bottom">
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => window.dispatchEvent(new Event("doctor-tracker:open-search"))}
                   >
-                    <Search className="h-4 w-4" />
-                    <span className="hidden sm:inline">Search</span>
+                    <Search className="h-4 w-4" aria-hidden />
+                    <span className="hidden sm:inline">{t("action.search")}</span>
                     <kbd className="hidden rounded border border-[var(--border)] px-1.5 text-[10px] md:inline">
                       ⌘K
                     </kbd>
@@ -209,8 +252,9 @@ export function AppShell({
                       size="icon"
                       onClick={() => setBellOpen((v) => !v)}
                       aria-label="Notifications"
+                      aria-expanded={bellOpen}
                     >
-                      <Bell className="h-4 w-4" />
+                      <Bell className="h-4 w-4" aria-hidden />
                       {unread > 0 ? (
                         <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--danger)] px-1 text-[10px] text-white">
                           {unread}
@@ -219,7 +263,11 @@ export function AppShell({
                     </Button>
                   </HoverInfo>
                   {bellOpen ? (
-                    <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-[var(--border)] bg-white p-2 shadow-xl">
+                    <div
+                      className="absolute right-0 mt-2 w-80 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-xl"
+                      role="menu"
+                      aria-label="Notifications"
+                    >
                       <div className="mb-2 flex items-center justify-between px-2">
                         <p className="text-sm font-semibold">Notifications</p>
                         <button
@@ -267,7 +315,9 @@ export function AppShell({
               </div>
             </div>
           </header>
-          <main className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
+          <main id="main-content" className="flex-1 px-4 py-6 md:px-8 md:py-8" tabIndex={-1} aria-label={t("a11y.main")}>
+            {children}
+          </main>
         </div>
       </div>
     </div>

@@ -24,7 +24,7 @@ export function EntityHover({ href, title, lines, badge, className, children }: 
     >
       {children}
       {open ? (
-        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-[var(--border)] bg-white p-3 shadow-xl">
+        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xl text-[var(--foreground)]">
           <div className="flex items-start justify-between gap-2">
             <p className="font-semibold text-[var(--foreground)]">{title}</p>
             {badge ? (

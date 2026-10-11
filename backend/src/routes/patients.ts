@@ -288,7 +288,7 @@ patientsRouter.delete("/:id", requireRole("admin", "receptionist"), async (req, 
   return res.json({ message: "Patient moved to trash" });
 });
 
-patientsRouter.post("/:id/restore", requireRole("admin"), async (req, res) => {
+patientsRouter.post("/:id/restore", requireRole("admin", "receptionist"), async (req, res) => {
   const patient = await Patient.findById(req.params.id);
   if (!patient) return res.status(404).json({ message: "Patient not found" });
   patient.deletedAt = null;

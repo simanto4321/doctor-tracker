@@ -12,11 +12,15 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { PageSkeleton } from "@/components/ui/skeleton";
+import { SortableTh } from "@/components/ui/sortable-th";
+import { TableSkeleton } from "@/components/ui/skeleton";
+import { WizardSteps } from "@/components/ui/wizard";
 import { apiRequest, toQuery } from "@/lib/api";
 import { downloadCsv } from "@/lib/download";
+import { useI18n } from "@/lib/i18n";
 import { canManageRecords } from "@/lib/roles";
 import { useAuthStore } from "@/lib/auth-store";
+import { softDeleteWithUndo } from "@/lib/undo-toast";
 import type { Doctor, Pagination, Patient } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
@@ -67,6 +71,8 @@ const emptyPatient: PatientForm = {
 export default function DoctorsPage() {
   const user = useAuthStore((s) => s.user);
   const canManage = canManageRecords(user);
+  const isAdmin = user?.role === "admin";
+  const { t } = useI18n();
   const [items, setItems] = useState<Doctor[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -88,6 +94,7 @@ export default function DoctorsPage() {
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [doctorForm, setDoctorForm] = useState<DoctorForm>(emptyDoctor);
   const [savingDoctor, setSavingDoctor] = useState(false);
+  const [wizardStep, setWizardStep] = useState(0);
 
   const [selected, setSelected] = useState<Doctor | null>(null);
   const [doctorPatients, setDoctorPatients] = useState<Patient[]>([]);
@@ -138,6 +145,7 @@ export default function DoctorsPage() {
   function openCreate() {
     setEditingDoctor(null);
     setDoctorForm(emptyDoctor);
+    setWizardStep(0);
     setDoctorOpen(true);
   }
 
@@ -153,7 +161,32 @@ export default function DoctorsPage() {
       workingHours: doctor.workingHours || "",
       bio: doctor.bio || "",
     });
+    setWizardStep(0);
     setDoctorOpen(true);
+  }
+
+  function toggleSort(column: string) {
+    if (sort === column) {
+      setDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSort(column);
+      setDir(column === "name" ? "asc" : "desc");
+    }
+    setPagination((p) => ({ ...p, page: 1 }));
+  }
+
+  async function softDeleteDoctor(doctor: Doctor) {
+    try {
+      await softDeleteWithUndo({
+        label: `${doctor.name} ${t("toast.movedTrash").toLowerCase()}`,
+        deletePath: `/doctors/${doctor.id}`,
+        restorePath: `/doctors/${doctor.id}/restore`,
+        onDone: loadDoctors,
+        undoLabel: t("action.undo"),
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
+    }
   }
 
   async function openDoctorPatients(doctor: Doctor) {
@@ -166,25 +199,34 @@ export default function DoctorsPage() {
     }
   }
 
-  async function saveDoctor(event: FormEvent) {
-    event.preventDefault();
+  async function saveDoctor(event?: FormEvent) {
+    event?.preventDefault();
     setSavingDoctor(true);
     try {
       if (editingDoctor) {
         await apiRequest(`/doctors/${editingDoctor.id}`, { method: "PUT", body: doctorForm });
-        toast.success("Doctor updated");
+        toast.success(t("toast.doctorUpdated"));
       } else {
         await apiRequest("/doctors", { method: "POST", body: doctorForm });
-        toast.success("Doctor created");
+        toast.success(t("toast.doctorCreated"));
       }
       setDoctorOpen(false);
       setDoctorForm(emptyDoctor);
+      setWizardStep(0);
       await loadDoctors();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSavingDoctor(false);
     }
+  }
+
+  function validateDoctorStep(step: number) {
+    if (step === 0) return Boolean(doctorForm.name && doctorForm.email && doctorForm.phone);
+    if (step === 1) {
+      return Boolean(doctorForm.specialization && doctorForm.hospital);
+    }
+    return true;
   }
 
   async function createPatient(event: FormEvent) {
@@ -211,21 +253,33 @@ export default function DoctorsPage() {
   async function removePatient(patientId: string) {
     if (!selected) return;
     try {
-      await apiRequest(`/doctors/${selected.id}/patients/${patientId}`, { method: "DELETE" });
-      toast.success("Patient removed");
-      await openDoctorPatients(selected);
-      await loadDoctors();
+      await softDeleteWithUndo({
+        label: t("toast.movedTrash"),
+        deletePath: `/doctors/${selected.id}/patients/${patientId}`,
+        restorePath: `/patients/${patientId}/restore`,
+        onDone: async () => {
+          await openDoctorPatients(selected);
+          await loadDoctors();
+        },
+        undoLabel: t("action.undo"),
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Delete failed");
     }
   }
 
+  const doctorSteps = [
+    t("wizard.doctor.step1"),
+    t("wizard.doctor.step2"),
+    t("wizard.doctor.step3"),
+  ];
+
   return (
     <AuthGuard>
       <AppShell
         feature="doctors"
-        title="Doctors"
-        subtitle="Create, edit, export, and manage each clinician’s caseload."
+        title={t("doctors.title")}
+        subtitle={t("doctors.subtitle")}
         action={
           <div className="flex gap-2">
             <Button
@@ -240,12 +294,12 @@ export default function DoctorsPage() {
               }}
             >
               <Download className="h-4 w-4" />
-              CSV
+              {t("action.csv")}
             </Button>
             {canManage ? (
               <Button onClick={openCreate}>
                 <Plus className="h-4 w-4" />
-                Add doctor
+                {t("action.addDoctor")}
               </Button>
             ) : null}
           </div>
@@ -290,25 +344,6 @@ export default function DoctorsPage() {
           </label>
           <label className="space-y-1.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-              Sort
-            </span>
-            <Select
-              value={`${sort}:${dir}`}
-              onChange={(e) => {
-                const [nextSort, nextDir] = e.target.value.split(":") as [string, "asc" | "desc"];
-                setSort(nextSort);
-                setDir(nextDir);
-              }}
-            >
-              <option value="createdAt:desc">Newest</option>
-              <option value="createdAt:asc">Oldest</option>
-              <option value="name:asc">Name A–Z</option>
-              <option value="name:desc">Name Z–A</option>
-              <option value="specialization:asc">Specialty A–Z</option>
-            </Select>
-          </label>
-          <label className="space-y-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
               From
             </span>
             <Input
@@ -336,34 +371,58 @@ export default function DoctorsPage() {
         </div>
 
         {loading ? (
-          <PageSkeleton />
+          <TableSkeleton />
         ) : error ? (
-          <div className="rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-soft)] p-5 text-[var(--danger)]">
+          <div
+            className="rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-soft)] p-5 text-[var(--danger)]"
+            role="alert"
+          >
             {error}
           </div>
         ) : items.length === 0 ? (
           <EmptyState
-            title="No doctors match these filters"
-            description="Try clearing search or date filters, or create the first doctor record."
+            kind="doctors"
+            title={t("doctors.emptyTitle")}
+            description={t("doctors.emptyDesc")}
             action={
-              <Button onClick={openCreate}>
-                <Plus className="h-4 w-4" />
-                Add doctor
-              </Button>
+              canManage ? (
+                <Button onClick={openCreate}>
+                  <Plus className="h-4 w-4" />
+                  {t("action.addDoctor")}
+                </Button>
+              ) : undefined
             }
           />
         ) : (
           <>
             <div className="table-wrap">
-              <table className="data">
+              <table className="data" aria-label={t("doctors.title")}>
                 <thead>
                   <tr>
-                    <th>Doctor</th>
-                    <th>Specialization</th>
-                    <th>Hospital</th>
-                    <th>Patients</th>
-                    <th>Added</th>
-                    <th>Actions</th>
+                    <SortableTh
+                      label={t("doctors.col.name")}
+                      column="name"
+                      sort={sort}
+                      dir={dir}
+                      onSort={toggleSort}
+                    />
+                    <th scope="col">{t("doctors.col.specialty")}</th>
+                    <th scope="col">{t("doctors.col.hospital")}</th>
+                    <SortableTh
+                      label={t("doctors.col.patients")}
+                      column="patientCount"
+                      sort={sort}
+                      dir={dir}
+                      onSort={toggleSort}
+                    />
+                    <SortableTh
+                      label={t("doctors.col.added")}
+                      column="createdAt"
+                      sort={sort}
+                      dir={dir}
+                      onSort={toggleSort}
+                    />
+                    <th scope="col">{t("doctors.col.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -399,13 +458,28 @@ export default function DoctorsPage() {
                       <td>
                         <div className="flex flex-wrap gap-1">
                           {canManage ? (
-                            <Button variant="ghost" size="icon" onClick={() => openEdit(doctor)}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEdit(doctor)}
+                              aria-label={`Edit ${doctor.name}`}
+                            >
                               <Pencil className="h-4 w-4" />
+                            </Button>
+                          ) : null}
+                          {isAdmin ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => softDeleteDoctor(doctor)}
+                              aria-label={`Delete ${doctor.name}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-[var(--danger)]" />
                             </Button>
                           ) : null}
                           <Button variant="secondary" size="sm" onClick={() => openDoctorPatients(doctor)}>
                             <Users className="h-4 w-4" />
-                            Patients
+                            {t("nav.patients")}
                           </Button>
                         </div>
                       </td>
@@ -417,7 +491,7 @@ export default function DoctorsPage() {
 
             <div className="mt-4 flex items-center justify-between gap-3">
               <p className="text-sm text-[var(--muted)]">
-                Page {pagination.page} of {pagination.totalPages} · {pagination.total} doctors
+                Page {pagination.page} of {pagination.totalPages} · {pagination.total} {t("nav.doctors").toLowerCase()}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -425,14 +499,14 @@ export default function DoctorsPage() {
                   disabled={pagination.page <= 1}
                   onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
                 >
-                  Previous
+                  {t("action.previous")}
                 </Button>
                 <Button
                   variant="secondary"
                   disabled={pagination.page >= pagination.totalPages}
                   onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
                 >
-                  Next
+                  {t("action.next")}
                 </Button>
               </div>
             </div>
@@ -442,45 +516,120 @@ export default function DoctorsPage() {
         <Modal
           open={doctorOpen}
           onClose={() => setDoctorOpen(false)}
-          title={editingDoctor ? "Edit doctor" : "Create doctor"}
-          description="Keep clinician profile and hospital assignment current."
+          title={editingDoctor ? "Edit doctor" : t("action.addDoctor")}
+          description="Step through identity, assignment, and profile details."
           wide
         >
-          <form className="grid gap-3 md:grid-cols-2" onSubmit={saveDoctor}>
-            {(
-              [
-                ["name", "Full name"],
-                ["specialization", "Specialization"],
-                ["hospital", "Hospital"],
-                ["department", "Department"],
-                ["phone", "Phone"],
-                ["email", "Email"],
-                ["workingHours", "Working hours"],
-              ] as const
-            ).map(([key, label]) => (
-              <label key={key} className="space-y-1.5">
-                <span className="text-sm font-semibold">{label}</span>
-                <Input
-                  type={key === "email" ? "email" : "text"}
-                  required={key !== "department" && key !== "workingHours"}
-                  value={doctorForm[key]}
-                  onChange={(e) => setDoctorForm((prev) => ({ ...prev, [key]: e.target.value }))}
+          <WizardSteps steps={doctorSteps} current={wizardStep} />
+          <form
+            className="grid gap-3 md:grid-cols-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (wizardStep < 2) {
+                if (!validateDoctorStep(wizardStep)) {
+                  toast.error("Please complete required fields");
+                  return;
+                }
+                setWizardStep((s) => s + 1);
+                return;
+              }
+              void saveDoctor();
+            }}
+          >
+            {wizardStep === 0 ? (
+              <>
+                <label className="space-y-1.5 md:col-span-2">
+                  <span className="text-sm font-semibold">Full name</span>
+                  <Input
+                    required
+                    value={doctorForm.name}
+                    onChange={(e) => setDoctorForm((prev) => ({ ...prev, name: e.target.value }))}
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-sm font-semibold">Email</span>
+                  <Input
+                    type="email"
+                    required
+                    value={doctorForm.email}
+                    onChange={(e) => setDoctorForm((prev) => ({ ...prev, email: e.target.value }))}
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-sm font-semibold">Phone</span>
+                  <Input
+                    required
+                    value={doctorForm.phone}
+                    onChange={(e) => setDoctorForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  />
+                </label>
+              </>
+            ) : null}
+            {wizardStep === 1 ? (
+              <>
+                <label className="space-y-1.5">
+                  <span className="text-sm font-semibold">Specialization</span>
+                  <Input
+                    required
+                    value={doctorForm.specialization}
+                    onChange={(e) =>
+                      setDoctorForm((prev) => ({ ...prev, specialization: e.target.value }))
+                    }
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-sm font-semibold">Hospital</span>
+                  <Input
+                    required
+                    value={doctorForm.hospital}
+                    onChange={(e) => setDoctorForm((prev) => ({ ...prev, hospital: e.target.value }))}
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-sm font-semibold">Department</span>
+                  <Input
+                    value={doctorForm.department}
+                    onChange={(e) =>
+                      setDoctorForm((prev) => ({ ...prev, department: e.target.value }))
+                    }
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-sm font-semibold">Working hours</span>
+                  <Input
+                    value={doctorForm.workingHours}
+                    onChange={(e) =>
+                      setDoctorForm((prev) => ({ ...prev, workingHours: e.target.value }))
+                    }
+                  />
+                </label>
+              </>
+            ) : null}
+            {wizardStep === 2 ? (
+              <label className="space-y-1.5 md:col-span-2">
+                <span className="text-sm font-semibold">Bio</span>
+                <Textarea
+                  value={doctorForm.bio}
+                  onChange={(e) => setDoctorForm((prev) => ({ ...prev, bio: e.target.value }))}
                 />
               </label>
-            ))}
-            <label className="space-y-1.5 md:col-span-2">
-              <span className="text-sm font-semibold">Bio</span>
-              <Textarea
-                value={doctorForm.bio}
-                onChange={(e) => setDoctorForm((prev) => ({ ...prev, bio: e.target.value }))}
-              />
-            </label>
-            <div className="mt-2 flex justify-end gap-2 md:col-span-2">
-              <Button type="button" variant="secondary" onClick={() => setDoctorOpen(false)}>
-                Cancel
+            ) : null}
+            <div className="mt-2 flex justify-between gap-2 md:col-span-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => (wizardStep === 0 ? setDoctorOpen(false) : setWizardStep((s) => s - 1))}
+              >
+                {wizardStep === 0 ? t("action.cancel") : t("action.back")}
               </Button>
               <Button disabled={savingDoctor}>
-                {savingDoctor ? "Saving…" : editingDoctor ? "Save changes" : "Create doctor"}
+                {wizardStep < 2
+                  ? t("action.continue")
+                  : savingDoctor
+                    ? "Saving…"
+                    : editingDoctor
+                      ? t("action.save")
+                      : t("action.create")}
               </Button>
             </div>
           </form>

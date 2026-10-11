@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FeatureTitle, HoverInfo } from "@/components/ui/hover-info";
 import { Input, Select } from "@/components/ui/input";
+import { PageSkeleton } from "@/components/ui/skeleton";
 import { apiRequest, toQuery } from "@/lib/api";
 import type { DashboardPreset, DashboardStats } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
@@ -382,7 +383,7 @@ export default function DashboardPage() {
         </div>
 
         {loading ? (
-          <div className="panel p-10 text-[var(--muted)]">Loading analytics…</div>
+          <PageSkeleton />
         ) : error ? (
           <div className="rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-soft)] p-5 text-[var(--danger)]">
             {error}

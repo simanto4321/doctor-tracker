@@ -52,10 +52,8 @@ doctorsRouter.get("/", async (req, res) => {
   const hospital = typeof req.query.hospital === "string" ? req.query.hospital.trim() : "";
   const sortField = typeof req.query.sort === "string" ? req.query.sort : "createdAt";
   const sortDir = req.query.dir === "asc" ? 1 : -1;
-  const allowedSort = new Set(["createdAt", "name", "specialization", "hospital"]);
-  const sort: Record<string, 1 | -1> = {
-    [allowedSort.has(sortField) ? sortField : "createdAt"]: sortDir,
-  };
+  const allowedSort = new Set(["createdAt", "name", "specialization", "hospital", "patientCount"]);
+  const sortKey = allowedSort.has(sortField) ? sortField : "createdAt";
 
   if (search) {
     const rx = new RegExp(escapeRegex(search), "i");
@@ -64,11 +62,67 @@ doctorsRouter.get("/", async (req, res) => {
   if (specialization) filter.specialization = new RegExp(`^${escapeRegex(specialization)}$`, "i");
   if (hospital) filter.hospital = new RegExp(escapeRegex(hospital), "i");
 
-  const [items, total] = await Promise.all([
-    Doctor.find(filter).sort(sort).skip(skip).limit(limit).lean(),
-    Doctor.countDocuments(filter),
-  ]);
+  const total = await Doctor.countDocuments(filter);
 
+  if (sortKey === "patientCount") {
+    const aggregated = await Doctor.aggregate<{
+      _id: unknown;
+      name: string;
+      specialization: string;
+      hospital: string;
+      phone: string;
+      email: string;
+      department?: string;
+      workingHours?: string;
+      bio?: string;
+      createdAt?: Date;
+      patientCount: number;
+    }>([
+      { $match: filter },
+      {
+        $lookup: {
+          from: "patients",
+          let: { doctorId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$doctor", "$$doctorId"] },
+                deletedAt: null,
+              },
+            },
+            { $count: "count" },
+          ],
+          as: "patientStats",
+        },
+      },
+      {
+        $addFields: {
+          patientCount: {
+            $ifNull: [{ $arrayElemAt: ["$patientStats.count", 0] }, 0],
+          },
+        },
+      },
+      { $sort: { patientCount: sortDir, name: 1 } },
+      { $skip: skip },
+      { $limit: limit },
+    ]);
+
+    return res.json({
+      items: aggregated.map((doctor) => ({
+        ...doctor,
+        id: doctor._id,
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
+    });
+  }
+
+  const sort: Record<string, 1 | -1> = { [sortKey]: sortDir };
+  const items = await Doctor.find(filter).sort(sort).skip(skip).limit(limit).lean();
   const doctorIds = items.map((d) => d._id);
   const counts = await Patient.aggregate<{ _id: unknown; count: number }>([
     { $match: { doctor: { $in: doctorIds }, deletedAt: null } },

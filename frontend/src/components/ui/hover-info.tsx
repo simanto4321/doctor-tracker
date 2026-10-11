@@ -102,7 +102,7 @@ export function HoverInfo({
           <div
             id={tipId}
             role="tooltip"
-            className="pointer-events-none fixed z-[80] w-72 rounded-2xl border border-[var(--border)] bg-white p-3 text-left shadow-xl"
+            className="pointer-events-none fixed z-[80] w-72 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 text-left shadow-xl text-[var(--foreground)]"
             style={{ top: coords.top, left: coords.left }}
           >
             <p className="font-display text-base text-[var(--foreground)]">

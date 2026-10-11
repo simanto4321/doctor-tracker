@@ -1,13 +1,14 @@
 @import "tailwindcss";
 
-:root {
+:root,
+[data-theme="light"] {
   --background: #eef4f2;
   --foreground: #14302b;
   --sidebar: #f7fbf9;
   --surface: #ffffff;
   --surface-soft: #e7f1ed;
   --border: #c9ddd5;
-  --muted: #5d746d;
+  --muted: #4d635c;
   --accent: #0f766e;
   --accent-strong: #0b5f59;
   --accent-soft: #ccfbf1;
@@ -24,6 +25,48 @@
   --danger: #be123c;
   --danger-soft: #ffe4e9;
   --danger-border: #fda4af;
+  --bg-glow-a: rgba(15, 118, 110, 0.12);
+  --bg-glow-b: rgba(29, 79, 120, 0.08);
+  --bg-top: #f4f9f7;
+  --bg-bottom: #e8f1ee;
+  --table-head: #f8fbfa;
+  --table-row-border: #e5efeb;
+  --panel-bg: color-mix(in srgb, white 92%, transparent);
+  --shadow: 0 18px 40px rgba(20, 48, 43, 0.04);
+}
+
+[data-theme="dark"] {
+  --background: #0f1715;
+  --foreground: #e7f2ee;
+  --sidebar: #121c19;
+  --surface: #182420;
+  --surface-soft: #24332e;
+  --border: #31443d;
+  --muted: #a7beb6;
+  --accent: #2dd4bf;
+  --accent-strong: #5eead4;
+  --accent-soft: #134e4a;
+  --accent-border: #0f766e;
+  --info: #7dd3fc;
+  --info-soft: #0c4a6e;
+  --info-border: #0369a1;
+  --success: #86efac;
+  --success-soft: #14532d;
+  --success-border: #166534;
+  --warning: #fde68a;
+  --warning-soft: #713f12;
+  --warning-border: #a16207;
+  --danger: #fda4af;
+  --danger-soft: #4c0519;
+  --danger-border: #9f1239;
+  --bg-glow-a: rgba(45, 212, 191, 0.1);
+  --bg-glow-b: rgba(125, 211, 252, 0.08);
+  --bg-top: #101916;
+  --bg-bottom: #0c1311;
+  --table-head: #1a2622;
+  --table-row-border: #24332e;
+  --panel-bg: color-mix(in srgb, #182420 94%, transparent);
+  --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
 }
 
 * {
@@ -37,15 +80,49 @@ body {
 
 body {
   background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 34%),
-    radial-gradient(circle at top right, rgba(29, 79, 120, 0.08), transparent 28%),
-    linear-gradient(180deg, #f4f9f7 0%, var(--background) 48%, #e8f1ee 100%);
+    radial-gradient(circle at top left, var(--bg-glow-a), transparent 34%),
+    radial-gradient(circle at top right, var(--bg-glow-b), transparent 28%),
+    linear-gradient(180deg, var(--bg-top) 0%, var(--background) 48%, var(--bg-bottom) 100%);
   color: var(--foreground);
   font-family: var(--font-body), "Segoe UI", sans-serif;
 }
 
 .font-display {
   font-family: var(--font-display), Georgia, serif;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 100;
+  border-radius: 0.75rem;
+  background: var(--accent);
+  color: white;
+  padding: 0.65rem 1rem;
+  font-weight: 600;
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 @keyframes rise-in {
@@ -89,16 +166,16 @@ body {
 
 .panel {
   border: 1px solid var(--border);
-  background: color-mix(in srgb, white 92%, transparent);
+  background: var(--panel-bg);
   border-radius: 1.25rem;
-  box-shadow: 0 18px 40px rgba(20, 48, 43, 0.04);
+  box-shadow: var(--shadow);
 }
 
 .table-wrap {
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 1.25rem;
-  background: white;
+  background: var(--surface);
 }
 
 table.data {
@@ -115,16 +192,26 @@ table.data th {
   color: var(--muted);
   padding: 0.95rem 1rem;
   border-bottom: 1px solid var(--border);
-  background: #f8fbfa;
+  background: var(--table-head);
 }
 
 table.data td {
   padding: 1rem;
-  border-bottom: 1px solid #e5efeb;
+  border-bottom: 1px solid var(--table-row-border);
   font-size: 0.925rem;
   vertical-align: middle;
 }
 
 table.data tr:last-child td {
   border-bottom: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-rise-delay-1,
+  .animate-rise-delay-2,
+  .animate-pulse-soft,
+  .animate-pulse {
+    animation: none !important;
+  }
 }
