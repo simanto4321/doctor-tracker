@@ -68,9 +68,6 @@ export default function LoginPage() {
           </div>
 
           <div className="animate-rise-delay-1 relative z-[1] my-12 max-w-xl lg:my-0">
-            <div className="mb-5 inline-flex items-center justify-center rounded-[1.75rem] bg-[var(--accent)] p-4 text-white shadow-[0_18px_40px_rgba(15,118,110,0.28)]">
-              <Stethoscope className="login-stethoscope h-12 w-12 sm:h-14 sm:w-14" strokeWidth={1.6} aria-hidden />
-            </div>
             <h1 className="font-display text-[clamp(2.75rem,7vw,5.25rem)] leading-[0.92] tracking-[-0.03em] text-[var(--foreground)]">
               Doctor
               <br />

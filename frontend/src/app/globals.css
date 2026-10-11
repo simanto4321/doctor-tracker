@@ -276,21 +276,6 @@ html[lang="ar"] .font-display {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
 }
 
-.login-stethoscope {
-  animation: login-stethoscope-in 0.7s ease both;
-}
-
-@keyframes login-stethoscope-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 .login-pulse-path {
   stroke-dasharray: 520;
   stroke-dashoffset: 520;
@@ -351,8 +336,7 @@ table.data tr:last-child td {
   .animate-rise-delay-2,
   .animate-pulse-soft,
   .animate-pulse,
-  .login-pulse-path,
-  .login-stethoscope {
+  .login-pulse-path {
     animation: none !important;
   }
 
