@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+:root {
+  --background: #eef4f2;
+  --foreground: #14302b;
+  --sidebar: #f7fbf9;
+  --surface: #ffffff;
+  --surface-soft: #e7f1ed;
+  --border: #c9ddd5;
+  --muted: #5d746d;
+  --accent: #0f766e;
+  --accent-strong: #0b5f59;
+  --accent-soft: #ccfbf1;
+  --accent-border: #5eead4;
+  --info: #1d4f78;
+  --info-soft: #e6f0f8;
+  --info-border: #9dbdd8;
+  --success: #166534;
+  --success-soft: #e7f6ec;
+  --success-border: #86c99a;
+  --warning: #9a6700;
+  --warning-soft: #fff7e0;
+  --warning-border: #efc66a;
+  --danger: #be123c;
+  --danger-soft: #ffe4e9;
+  --danger-border: #fda4af;
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 34%),
+    radial-gradient(circle at top right, rgba(29, 79, 120, 0.08), transparent 28%),
+    linear-gradient(180deg, #f4f9f7 0%, var(--background) 48%, #e8f1ee 100%);
+  color: var(--foreground);
+  font-family: var(--font-body), "Segoe UI", sans-serif;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.04);
+  }
+}
+
+.animate-rise {
+  animation: rise-in 0.5s ease both;
+}
+
+.animate-rise-delay-1 {
+  animation: rise-in 0.5s ease 0.08s both;
+}
+
+.animate-rise-delay-2 {
+  animation: rise-in 0.5s ease 0.16s both;
+}
+
+.animate-pulse-soft {
+  animation: soft-pulse 4.5s ease-in-out infinite;
+}
+
+.panel {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, white 92%, transparent);
+  border-radius: 1.25rem;
+  box-shadow: 0 18px 40px rgba(20, 48, 43, 0.04);
+}
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: white;
+}
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+table.data th {
+  text-align: left;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: #f8fbfa;
+}
+
+table.data td {
+  padding: 1rem;
+  border-bottom: 1px solid #e5efeb;
+  font-size: 0.925rem;
+  vertical-align: middle;
+}
+
+table.data tr:last-child td {
+  border-bottom: none;
+}
