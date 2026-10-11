@@ -69,11 +69,12 @@ export async function revokeRefreshToken(raw: string) {
 }
 
 function cookieOptions(maxAgeMs: number) {
-  const secure = process.env.COOKIE_SECURE === "true";
+  const secure = process.env.COOKIE_SECURE === "true" || process.env.VERCEL === "1";
   return {
     httpOnly: true,
     secure,
-    sameSite: "lax" as const,
+    // Cross-site frontend/API on Vercel needs None+Secure; local stays Lax.
+    sameSite: (secure ? "none" : "lax") as "none" | "lax",
     path: "/",
     maxAge: maxAgeMs,
   };
@@ -94,8 +95,14 @@ export function setAuthCookies(
 }
 
 export function clearAuthCookies(res: Response) {
-  res.clearCookie(ACCESS_COOKIE, { path: "/" });
-  res.clearCookie(REFRESH_COOKIE, { path: "/" });
+  const secure = process.env.COOKIE_SECURE === "true" || process.env.VERCEL === "1";
+  const base = {
+    path: "/",
+    secure,
+    sameSite: (secure ? "none" : "lax") as "none" | "lax",
+  };
+  res.clearCookie(ACCESS_COOKIE, base);
+  res.clearCookie(REFRESH_COOKIE, base);
 }
 
 export const cookieNames = { ACCESS_COOKIE, REFRESH_COOKIE };
