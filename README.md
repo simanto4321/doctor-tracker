@@ -68,7 +68,7 @@ MongoDB (external URI or memory server)
 - **Ops:** hospitals/departments, bulk CSV import, soft-delete trash/restore, Cmd+K search, notifications.
 - **Hover insights:** nav + feature titles + row hovers show live stats via `/api/insights/hover/:feature`.
 - **Audit:** admin-readable log of create/update/delete/login/import actions.
-- **Dashboard:** aggregations for totals, patients-per-doctor, condition mix, date trends.
+- **Dashboard:** date-range picker, hospital/specialty filters, gender & age charts, specialization heatmap, hospital comparison, doctor utilization, PNG/PDF export, saved presets.
 
 ## Technical decisions
 
@@ -158,7 +158,8 @@ Calm Clinical Teal: light mint canvas, teal primary actions, pastel badges, Frau
 | PUT/DELETE | `/api/patients/:id` | Update / soft-delete |
 | GET | `/api/patients/export.csv` | Export patients |
 | GET | `/api/audit` | Admin audit trail |
-| GET | `/api/dashboard/stats` | Analytics payload |
+| GET | `/api/dashboard/stats` | Analytics (`from`/`to`/`hospital`/`specialization`) |
+| GET/POST/DELETE | `/api/dashboard/presets` | Saved dashboard filter presets |
 | GET/POST | `/api/appointments` | Schedule / list |
 | PUT | `/api/appointments/:id` | Reschedule / status |
 | GET/POST | `/api/labs` | Lab results |

@@ -172,18 +172,37 @@ export type DashboardStats = {
     conditionsTracked: number;
     upcomingAppointments?: number;
     openFollowUps?: number;
+    patientsInRange?: number;
   };
   range?: { from: string; to: string };
+  appliedFilters?: { hospital: string; specialization: string };
+  filtersMeta?: { hospitals: string[]; specializations: string[] };
   patientsPerDoctor: Array<{
     doctorId: string;
     name: string;
     specialization: string;
+    hospital?: string;
     patients: number;
   }>;
   conditionBreakdown: Array<{ condition: string; count: number }>;
   specializationBreakdown: Array<{ specialization: string; count: number }>;
   genderBreakdown?: Array<{ gender: string; count: number }>;
   ageBreakdown?: Array<{ bucket: string; count: number }>;
+  hospitalComparison?: Array<{
+    hospital: string;
+    patients: number;
+    doctors: number;
+    avgPerDoctor: number;
+  }>;
+  specializationHeatmap?: {
+    hospitals: string[];
+    specializations: string[];
+    cells: Array<{ hospital: string; specialization: string; patients: number }>;
+  };
+  doctorUtilization?: {
+    doctors: Array<{ doctorId: string; name: string }>;
+    series: Array<Record<string, string | number>>;
+  };
   patientTrend: Array<{ date: string; label: string; patients: number }>;
   recentPatients: Array<{
     id: string;
@@ -193,4 +212,16 @@ export type DashboardStats = {
     doctor: string;
     riskFlag?: string;
   }>;
+};
+
+export type DashboardPreset = {
+  id: string;
+  name: string;
+  filters: {
+    from?: string;
+    to?: string;
+    hospital?: string;
+    specialization?: string;
+  };
+  updatedAt?: string;
 };

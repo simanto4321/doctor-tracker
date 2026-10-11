@@ -24,7 +24,7 @@ insightsRouter.get("/hover/:feature", async (req, res) => {
   > = {
     dashboard: {
       title: "Dashboard",
-      summary: "Live clinic KPIs, intake trends, and caseload mix.",
+      summary: "Date-range analytics, hospital compare, utilization, and exportable charts.",
       build: async () => {
         const [doctors, patients, appts] = await Promise.all([
           Doctor.countDocuments({ deletedAt: null }),
@@ -41,6 +41,54 @@ insightsRouter.get("/hover/:feature", async (req, res) => {
           { label: "Upcoming appts", value: String(appts) },
         ];
       },
+    },
+    "dashboard-range": {
+      title: "Date range",
+      summary: "Filter intake and utilization by custom from/to dates or quick ranges.",
+      build: async () => [
+        { label: "Quick picks", value: "7d · 30d · 90d · YTD" },
+        { label: "Max span", value: "366 days" },
+      ],
+    },
+    "dashboard-heatmap": {
+      title: "Specialization heatmap",
+      summary: "Patient volume by hospital × specialization for staffing comparisons.",
+      build: async () => {
+        const hospitals = await Doctor.distinct("hospital", { deletedAt: null });
+        return [
+          { label: "Hospitals", value: String(hospitals.length) },
+          { label: "View", value: "Heat intensity" },
+        ];
+      },
+    },
+    "dashboard-demographics": {
+      title: "Demographics",
+      summary: "Gender and age-band distribution across the active patient panel.",
+      build: async () => {
+        const total = await Patient.countDocuments({ deletedAt: null });
+        return [{ label: "Patients", value: String(total) }];
+      },
+    },
+    "dashboard-utilization": {
+      title: "Doctor utilization",
+      summary: "New patients assigned over time for the busiest clinicians in range.",
+      build: async () => [
+        { label: "Series", value: "Top 5 doctors" },
+        { label: "Metric", value: "Intake / day" },
+      ],
+    },
+    "dashboard-export": {
+      title: "Export dashboard",
+      summary: "Capture the analytics board as PNG or multi-page PDF for reports.",
+      build: async () => [
+        { label: "Formats", value: "PNG · PDF" },
+        { label: "Scope", value: "Visible board" },
+      ],
+    },
+    "dashboard-presets": {
+      title: "Saved filter presets",
+      summary: "Store and reload date/hospital/specialty filter combinations.",
+      build: async () => [{ label: "Scope", value: "Per user" }],
     },
     doctors: {
       title: "Doctors",
