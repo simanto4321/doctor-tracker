@@ -8,7 +8,8 @@ export async function connectDatabase() {
 
   if (uri) {
     await mongoose.connect(uri);
-    console.log(`[db] Connected to MongoDB at ${uri}`);
+    const safeHost = uri.replace(/\/\/([^:/@]+):([^@]+)@/, "//***:***@");
+    console.log(`[db] Connected to MongoDB at ${safeHost}`);
     return { mode: "external" as const, uri };
   }
 

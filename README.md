@@ -215,6 +215,10 @@ Compact phone frames (light | dark). Images are resized for GitHub README fit.
 ## Submission
 
 - **GitHub:** https://github.com/simanto4321/doctor-tracker
+- **Live frontend:** https://doctor-tracker-sigma.vercel.app
+- **Live backend API:** https://doctor-tracker-api.vercel.app/api
+- **API health:** https://doctor-tracker-api.vercel.app/api/health
+- **Swagger docs:** https://doctor-tracker-api.vercel.app/api/docs
 - **Demo credentials** (if required for review):
 
 | Role | Email | Password |
