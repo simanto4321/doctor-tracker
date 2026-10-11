@@ -67,7 +67,7 @@ MongoDB (external URI or memory server)
 - **Clinical chart:** visits, prescriptions, labs, vitals, condition history, referrals, documents.
 - **Ops:** hospitals/departments, bulk CSV import, soft-delete trash/restore, Cmd+K search, notifications.
 - **Hover insights:** nav + feature titles + row hovers show live stats via `/api/insights/hover/:feature`.
-- **UX boosters:** dark/light theme, EN/ES i18n, sortable table columns, skeleton loaders, delete undo toasts, create wizards, empty-state illustrations, a11y (skip link, ARIA, focus, contrast).
+- **UX boosters:** dark/light theme, i18n (EN / বাংলা / ES / FR / हिन्दी / العربية), sortable table columns, skeleton loaders, delete undo toasts, create wizards, empty-state illustrations, a11y (skip link, ARIA, focus, contrast).
 - **Audit:** admin-readable log of create/update/delete/login/import actions.
 - **Dashboard:** date-range picker, hospital/specialty filters, gender & age charts, specialization heatmap, hospital comparison, doctor utilization, PNG/PDF export, saved presets.
 

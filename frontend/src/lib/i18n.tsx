@@ -9,9 +9,23 @@ import {
   useState,
 } from "react";
 
-export type Locale = "en" | "es";
+export type Locale = "en" | "es" | "bn" | "fr" | "hi" | "ar";
 
 type Dict = Record<string, string>;
+
+export const LOCALES: Array<{
+  code: Locale;
+  label: string;
+  nativeLabel: string;
+  dir?: "ltr" | "rtl";
+}> = [
+  { code: "en", label: "English", nativeLabel: "English" },
+  { code: "bn", label: "Bengali", nativeLabel: "বাংলা" },
+  { code: "es", label: "Spanish", nativeLabel: "Español" },
+  { code: "fr", label: "French", nativeLabel: "Français" },
+  { code: "hi", label: "Hindi", nativeLabel: "हिन्दी" },
+  { code: "ar", label: "Arabic", nativeLabel: "العربية", dir: "rtl" },
+];
 
 const en: Dict = {
   "app.name": "Doctor Tracker",
@@ -81,6 +95,76 @@ const en: Dict = {
   "a11y.main": "Main content",
   "theme.light": "Light",
   "theme.dark": "Dark",
+};
+
+const bn: Dict = {
+  "app.name": "ডাক্তার ট্র্যাকার",
+  "app.tagline": "ক্লিনিক্যাল অপারেশনস ডেস্ক",
+  "nav.dashboard": "ড্যাশবোর্ড",
+  "nav.doctors": "ডাক্তার",
+  "nav.patients": "রোগী",
+  "nav.appointments": "অ্যাপয়েন্টমেন্ট",
+  "nav.prescriptions": "প্রেসক্রিপশন",
+  "nav.labs": "ল্যাব",
+  "nav.referrals": "রেফারেল",
+  "nav.hospitals": "হাসপাতাল",
+  "nav.documents": "নথি",
+  "nav.import": "ইমপোর্ট",
+  "nav.trash": "ট্র্যাশ",
+  "nav.audit": "অডিট লগ",
+  "nav.team": "টিম",
+  "action.search": "খুঁজুন",
+  "action.signOut": "সাইন আউট",
+  "action.csv": "CSV",
+  "action.addDoctor": "ডাক্তার যোগ করুন",
+  "action.addPatient": "রোগী যোগ করুন",
+  "action.previous": "আগের",
+  "action.next": "পরের",
+  "action.cancel": "বাতিল",
+  "action.save": "সেভ",
+  "action.back": "পিছনে",
+  "action.continue": "চালিয়ে যান",
+  "action.create": "তৈরি করুন",
+  "action.undo": "পূর্বাবস্থায়",
+  "action.theme": "থিম বদলান",
+  "action.language": "ভাষা",
+  "doctors.title": "ডাক্তার",
+  "doctors.subtitle": "প্রতিটি চিকিৎসকের কেসলোড তৈরি, সম্পাদনা, এক্সপোর্ট ও পরিচালনা করুন।",
+  "doctors.emptyTitle": "এই ফিল্টারে কোনো ডাক্তার নেই",
+  "doctors.emptyDesc": "সার্চ বা তারিখ ফিল্টার সরান, অথবা প্রথম ডাক্তার রেকর্ড তৈরি করুন।",
+  "doctors.col.name": "ডাক্তার",
+  "doctors.col.specialty": "বিশেষত্ব",
+  "doctors.col.hospital": "হাসপাতাল",
+  "doctors.col.patients": "রোগী",
+  "doctors.col.added": "যোগ হয়েছে",
+  "doctors.col.actions": "অ্যাকশন",
+  "patients.title": "রোগী",
+  "patients.subtitle": "ক্লিনিক জুড়ে রোগীর চার্ট খুঁজুন, ফিল্টার করুন, সম্পাদনা করুন ও সফট-ডিলিট করুন।",
+  "patients.emptyTitle": "কোনো রোগী পাওয়া যায়নি",
+  "patients.emptyDesc": "ফিল্টার সমন্বয় করুন অথবা কোনো ডাক্তারের অধীনে রোগী যোগ করুন।",
+  "patients.col.name": "রোগী",
+  "patients.col.condition": "অবস্থা",
+  "patients.col.doctor": "ডাক্তার",
+  "patients.col.demo": "জনমিতি",
+  "patients.col.registered": "নিবন্ধন",
+  "patients.col.actions": "অ্যাকশন",
+  "toast.doctorCreated": "ডাক্তার তৈরি হয়েছে",
+  "toast.doctorUpdated": "ডাক্তার আপডেট হয়েছে",
+  "toast.patientCreated": "রোগী তৈরি হয়েছে",
+  "toast.patientUpdated": "রোগী আপডেট হয়েছে",
+  "toast.movedTrash": "ট্র্যাশে সরানো হয়েছে",
+  "toast.restored": "পুনরুদ্ধার হয়েছে",
+  "toast.signedOut": "সাইন আউট হয়েছে",
+  "wizard.doctor.step1": "পরিচয়",
+  "wizard.doctor.step2": "অ্যাসাইনমেন্ট",
+  "wizard.doctor.step3": "প্রোফাইল",
+  "wizard.patient.step1": "পরিচয়",
+  "wizard.patient.step2": "ক্লিনিক্যাল",
+  "wizard.patient.step3": "অ্যাসাইনমেন্ট",
+  "a11y.skip": "মূল কন্টেন্টে যান",
+  "a11y.main": "মূল কন্টেন্ট",
+  "theme.light": "লাইট",
+  "theme.dark": "ডার্ক",
 };
 
 const es: Dict = {
@@ -153,12 +237,227 @@ const es: Dict = {
   "theme.dark": "Oscuro",
 };
 
-const dictionaries: Record<Locale, Dict> = { en, es };
+const fr: Dict = {
+  "app.name": "Doctor Tracker",
+  "app.tagline": "Bureau des opérations cliniques",
+  "nav.dashboard": "Tableau de bord",
+  "nav.doctors": "Médecins",
+  "nav.patients": "Patients",
+  "nav.appointments": "Rendez-vous",
+  "nav.prescriptions": "Ordonnances",
+  "nav.labs": "Laboratoire",
+  "nav.referrals": "Références",
+  "nav.hospitals": "Hôpitaux",
+  "nav.documents": "Documents",
+  "nav.import": "Importer",
+  "nav.trash": "Corbeille",
+  "nav.audit": "Journal d’audit",
+  "nav.team": "Équipe",
+  "action.search": "Rechercher",
+  "action.signOut": "Se déconnecter",
+  "action.csv": "CSV",
+  "action.addDoctor": "Ajouter un médecin",
+  "action.addPatient": "Ajouter un patient",
+  "action.previous": "Précédent",
+  "action.next": "Suivant",
+  "action.cancel": "Annuler",
+  "action.save": "Enregistrer",
+  "action.back": "Retour",
+  "action.continue": "Continuer",
+  "action.create": "Créer",
+  "action.undo": "Annuler",
+  "action.theme": "Changer de thème",
+  "action.language": "Langue",
+  "doctors.title": "Médecins",
+  "doctors.subtitle": "Créez, modifiez, exportez et gérez la charge de chaque clinicien.",
+  "doctors.emptyTitle": "Aucun médecin ne correspond à ces filtres",
+  "doctors.emptyDesc": "Effacez la recherche ou créez le premier dossier médecin.",
+  "doctors.col.name": "Médecin",
+  "doctors.col.specialty": "Spécialité",
+  "doctors.col.hospital": "Hôpital",
+  "doctors.col.patients": "Patients",
+  "doctors.col.added": "Ajouté",
+  "doctors.col.actions": "Actions",
+  "patients.title": "Patients",
+  "patients.subtitle": "Recherchez, filtrez, modifiez et supprimez en douceur les dossiers patients.",
+  "patients.emptyTitle": "Aucun patient trouvé",
+  "patients.emptyDesc": "Ajustez les filtres ou ajoutez un patient assigné à un médecin.",
+  "patients.col.name": "Patient",
+  "patients.col.condition": "Condition",
+  "patients.col.doctor": "Médecin",
+  "patients.col.demo": "Démographie",
+  "patients.col.registered": "Inscrit",
+  "patients.col.actions": "Actions",
+  "toast.doctorCreated": "Médecin créé",
+  "toast.doctorUpdated": "Médecin mis à jour",
+  "toast.patientCreated": "Patient créé",
+  "toast.patientUpdated": "Patient mis à jour",
+  "toast.movedTrash": "Déplacé vers la corbeille",
+  "toast.restored": "Restauré",
+  "toast.signedOut": "Déconnecté",
+  "wizard.doctor.step1": "Identité",
+  "wizard.doctor.step2": "Affectation",
+  "wizard.doctor.step3": "Profil",
+  "wizard.patient.step1": "Identité",
+  "wizard.patient.step2": "Clinique",
+  "wizard.patient.step3": "Affectation",
+  "a11y.skip": "Aller au contenu principal",
+  "a11y.main": "Contenu principal",
+  "theme.light": "Clair",
+  "theme.dark": "Sombre",
+};
+
+const hi: Dict = {
+  "app.name": "डॉक्टर ट्रैकर",
+  "app.tagline": "क्लिनिकल ऑपरेशन्स डेस्क",
+  "nav.dashboard": "डैशबोर्ड",
+  "nav.doctors": "डॉक्टर",
+  "nav.patients": "मरीज़",
+  "nav.appointments": "अपॉइंटमेंट",
+  "nav.prescriptions": "प्रिस्क्रिप्शन",
+  "nav.labs": "लैब",
+  "nav.referrals": "रेफ़रल",
+  "nav.hospitals": "अस्पताल",
+  "nav.documents": "दस्तावेज़",
+  "nav.import": "इंपोर्ट",
+  "nav.trash": "ट्रैश",
+  "nav.audit": "ऑडिट लॉग",
+  "nav.team": "टीम",
+  "action.search": "खोजें",
+  "action.signOut": "साइन आउट",
+  "action.csv": "CSV",
+  "action.addDoctor": "डॉक्टर जोड़ें",
+  "action.addPatient": "मरीज़ जोड़ें",
+  "action.previous": "पिछला",
+  "action.next": "अगला",
+  "action.cancel": "रद्द करें",
+  "action.save": "सेव",
+  "action.back": "वापस",
+  "action.continue": "जारी रखें",
+  "action.create": "बनाएँ",
+  "action.undo": "पूर्ववत",
+  "action.theme": "थीम बदलें",
+  "action.language": "भाषा",
+  "doctors.title": "डॉक्टर",
+  "doctors.subtitle": "हर चिकित्सक का केसलोड बनाएँ, संपादित करें, निर्यात करें और प्रबंधित करें।",
+  "doctors.emptyTitle": "इन फ़िल्टर से कोई डॉक्टर नहीं मिला",
+  "doctors.emptyDesc": "खोज या तारीख फ़िल्टर साफ़ करें, या पहला डॉक्टर रिकॉर्ड बनाएँ।",
+  "doctors.col.name": "डॉक्टर",
+  "doctors.col.specialty": "विशेषज्ञता",
+  "doctors.col.hospital": "अस्पताल",
+  "doctors.col.patients": "मरीज़",
+  "doctors.col.added": "जोड़ा गया",
+  "doctors.col.actions": "क्रियाएँ",
+  "patients.title": "मरीज़",
+  "patients.subtitle": "क्लिनिक भर में मरीज़ चार्ट खोजें, फ़िल्टर करें, संपादित करें और सॉफ्ट-डिलीट करें।",
+  "patients.emptyTitle": "कोई मरीज़ नहीं मिला",
+  "patients.emptyDesc": "फ़िल्टर समायोजित करें या किसी डॉक्टर को मरीज़ असाइन करें।",
+  "patients.col.name": "मरीज़",
+  "patients.col.condition": "स्थिति",
+  "patients.col.doctor": "डॉक्टर",
+  "patients.col.demo": "जनसांख्यिकी",
+  "patients.col.registered": "पंजीकृत",
+  "patients.col.actions": "क्रियाएँ",
+  "toast.doctorCreated": "डॉक्टर बनाया गया",
+  "toast.doctorUpdated": "डॉक्टर अपडेट हुआ",
+  "toast.patientCreated": "मरीज़ बनाया गया",
+  "toast.patientUpdated": "मरीज़ अपडेट हुआ",
+  "toast.movedTrash": "ट्रैश में भेजा गया",
+  "toast.restored": "पुनर्स्थापित",
+  "toast.signedOut": "साइन आउट हो गया",
+  "wizard.doctor.step1": "पहचान",
+  "wizard.doctor.step2": "असाइनमेंट",
+  "wizard.doctor.step3": "प्रोफ़ाइल",
+  "wizard.patient.step1": "पहचान",
+  "wizard.patient.step2": "क्लिनिकल",
+  "wizard.patient.step3": "असाइनमेंट",
+  "a11y.skip": "मुख्य सामग्री पर जाएँ",
+  "a11y.main": "मुख्य सामग्री",
+  "theme.light": "लाइट",
+  "theme.dark": "डार्क",
+};
+
+const ar: Dict = {
+  "app.name": "متتبع الأطباء",
+  "app.tagline": "مكتب العمليات السريرية",
+  "nav.dashboard": "لوحة التحكم",
+  "nav.doctors": "الأطباء",
+  "nav.patients": "المرضى",
+  "nav.appointments": "المواعيد",
+  "nav.prescriptions": "الوصفات",
+  "nav.labs": "المختبر",
+  "nav.referrals": "الإحالات",
+  "nav.hospitals": "المستشفيات",
+  "nav.documents": "المستندات",
+  "nav.import": "استيراد",
+  "nav.trash": "المهملات",
+  "nav.audit": "سجل التدقيق",
+  "nav.team": "الفريق",
+  "action.search": "بحث",
+  "action.signOut": "تسجيل الخروج",
+  "action.csv": "CSV",
+  "action.addDoctor": "إضافة طبيب",
+  "action.addPatient": "إضافة مريض",
+  "action.previous": "السابق",
+  "action.next": "التالي",
+  "action.cancel": "إلغاء",
+  "action.save": "حفظ",
+  "action.back": "رجوع",
+  "action.continue": "متابعة",
+  "action.create": "إنشاء",
+  "action.undo": "تراجع",
+  "action.theme": "تبديل السمة",
+  "action.language": "اللغة",
+  "doctors.title": "الأطباء",
+  "doctors.subtitle": "أنشئ وعدّل وصدر وأدر عبء عمل كل طبيب.",
+  "doctors.emptyTitle": "لا يوجد أطباء مطابقون لهذه عوامل التصفية",
+  "doctors.emptyDesc": "جرّب مسح البحث أو أنشئ أول سجل طبيب.",
+  "doctors.col.name": "الطبيب",
+  "doctors.col.specialty": "التخصص",
+  "doctors.col.hospital": "المستشفى",
+  "doctors.col.patients": "المرضى",
+  "doctors.col.added": "أُضيف",
+  "doctors.col.actions": "إجراءات",
+  "patients.title": "المرضى",
+  "patients.subtitle": "ابحث وصفِّ وعدّل واحذف سجلات المرضى بهدوء عبر العيادة.",
+  "patients.emptyTitle": "لم يتم العثور على مرضى",
+  "patients.emptyDesc": "اضبط عوامل التصفية أو أضف مريضًا معيّنًا لطبيب.",
+  "patients.col.name": "المريض",
+  "patients.col.condition": "الحالة",
+  "patients.col.doctor": "الطبيب",
+  "patients.col.demo": "البيانات الديموغرافية",
+  "patients.col.registered": "التسجيل",
+  "patients.col.actions": "إجراءات",
+  "toast.doctorCreated": "تم إنشاء الطبيب",
+  "toast.doctorUpdated": "تم تحديث الطبيب",
+  "toast.patientCreated": "تم إنشاء المريض",
+  "toast.patientUpdated": "تم تحديث المريض",
+  "toast.movedTrash": "نُقل إلى المهملات",
+  "toast.restored": "تمت الاستعادة",
+  "toast.signedOut": "تم تسجيل الخروج",
+  "wizard.doctor.step1": "الهوية",
+  "wizard.doctor.step2": "التعيين",
+  "wizard.doctor.step3": "الملف",
+  "wizard.patient.step1": "الهوية",
+  "wizard.patient.step2": "سريري",
+  "wizard.patient.step3": "التعيين",
+  "a11y.skip": "تخطَّ إلى المحتوى الرئيسي",
+  "a11y.main": "المحتوى الرئيسي",
+  "theme.light": "فاتح",
+  "theme.dark": "داكن",
+};
+
+const dictionaries: Record<Locale, Dict> = { en, bn, es, fr, hi, ar };
+
+function isLocale(value: string | null): value is Locale {
+  return Boolean(value && value in dictionaries);
+}
 
 type I18nContextValue = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   t: (key: string) => string;
+  locales: typeof LOCALES;
 };
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -167,18 +466,22 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("en");
 
   useEffect(() => {
-    const saved = localStorage.getItem("doctor-tracker-locale") as Locale | null;
-    if (saved === "en" || saved === "es") setLocaleState(saved);
+    const saved = localStorage.getItem("doctor-tracker-locale");
+    if (isLocale(saved)) setLocaleState(saved);
   }, []);
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
     localStorage.setItem("doctor-tracker-locale", next);
+    const meta = LOCALES.find((item) => item.code === next);
     document.documentElement.lang = next;
+    document.documentElement.dir = meta?.dir || "ltr";
   }, []);
 
   useEffect(() => {
+    const meta = LOCALES.find((item) => item.code === locale);
     document.documentElement.lang = locale;
+    document.documentElement.dir = meta?.dir || "ltr";
   }, [locale]);
 
   const t = useCallback(
@@ -186,7 +489,10 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     [locale]
   );
 
-  const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
+  const value = useMemo(
+    () => ({ locale, setLocale, t, locales: LOCALES }),
+    [locale, setLocale, t]
+  );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 

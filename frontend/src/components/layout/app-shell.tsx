@@ -73,7 +73,7 @@ export function AppShell({
   const clearSession = useAuthStore((s) => s.clearSession);
   const theme = useThemeStore((s) => s.theme);
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
-  const { t, locale, setLocale } = useI18n();
+  const { t, locale, setLocale, locales } = useI18n();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
@@ -223,13 +223,16 @@ export function AppShell({
                   <span className="sr-only">{t("action.language")}</span>
                   <Languages className="h-4 w-4 text-[var(--muted)]" aria-hidden />
                   <select
-                    className="h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-2 text-sm font-semibold text-[var(--foreground)]"
+                    className="h-10 max-w-[9.5rem] rounded-xl border border-[var(--border)] bg-[var(--surface)] px-2 text-sm font-semibold text-[var(--foreground)]"
                     value={locale}
                     onChange={(e) => setLocale(e.target.value as Locale)}
                     aria-label={t("action.language")}
                   >
-                    <option value="en">EN</option>
-                    <option value="es">ES</option>
+                    {locales.map((item) => (
+                      <option key={item.code} value={item.code}>
+                        {item.nativeLabel}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 <HoverInfo feature="search" label={t("action.search")} side="bottom">

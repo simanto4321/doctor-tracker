@@ -84,7 +84,37 @@ body {
     radial-gradient(circle at top right, var(--bg-glow-b), transparent 28%),
     linear-gradient(180deg, var(--bg-top) 0%, var(--background) 48%, var(--bg-bottom) 100%);
   color: var(--foreground);
-  font-family: var(--font-body), "Segoe UI", sans-serif;
+  font-family:
+    var(--font-body),
+    var(--font-bn),
+    var(--font-hi),
+    var(--font-ar),
+    "Segoe UI",
+    sans-serif;
+}
+
+html[lang="bn"] body,
+html[lang="hi"] body,
+html[lang="ar"] body {
+  font-family:
+    var(--font-bn),
+    var(--font-hi),
+    var(--font-ar),
+    var(--font-body),
+    "Segoe UI",
+    sans-serif;
+}
+
+html[lang="bn"] .font-display,
+html[lang="hi"] .font-display,
+html[lang="ar"] .font-display {
+  font-family:
+    var(--font-bn),
+    var(--font-hi),
+    var(--font-ar),
+    var(--font-display),
+    Georgia,
+    serif;
 }
 
 .font-display {
