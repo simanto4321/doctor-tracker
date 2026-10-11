@@ -3,6 +3,7 @@ export type User = {
   name: string;
   email: string;
   role: "admin" | "receptionist" | "doctor" | string;
+  emailVerified?: boolean;
 };
 
 export type Pagination = {

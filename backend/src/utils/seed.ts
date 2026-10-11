@@ -142,17 +142,30 @@ export async function seedDatabase() {
       email,
       passwordHash: await bcrypt.hash(password, 10),
       role: "admin",
+      emailVerified: true,
+      digestEnabled: true,
     });
+  } else if (!existingAdmin.emailVerified) {
+    existingAdmin.emailVerified = true;
+    existingAdmin.digestEnabled = true;
+    await existingAdmin.save();
   }
 
   const receptionistEmail = "front.desk@doctortracker.com";
-  if (!(await User.findOne({ email: receptionistEmail }))) {
+  const existingDesk = await User.findOne({ email: receptionistEmail });
+  if (!existingDesk) {
     await User.create({
       name: "Front Desk",
       email: receptionistEmail,
       passwordHash: await bcrypt.hash("Desk@123", 10),
       role: "receptionist",
+      emailVerified: true,
+      digestEnabled: true,
     });
+  } else if (!existingDesk.emailVerified) {
+    existingDesk.emailVerified = true;
+    existingDesk.digestEnabled = true;
+    await existingDesk.save();
   }
 
   const doctorCount = await Doctor.countDocuments();

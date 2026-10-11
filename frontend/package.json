@@ -6,7 +6,9 @@
     "dev": "next dev --hostname 127.0.0.1 --port 4317",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1 --port 4317",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -27,6 +29,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",

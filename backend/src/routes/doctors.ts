@@ -7,7 +7,9 @@ import { Appointment } from "../models/Appointment.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { escapeRegex, parseDateRange, parsePagination } from "../utils/parseQuery.js";
 import { writeAudit } from "../utils/audit.js";
+import { bustCachePrefix } from "../utils/cache.js";
 import { toCsv } from "../utils/csv.js";
+import { dispatchWebhook } from "../utils/webhooks.js";
 import { Notification } from "../models/Notification.js";
 
 const doctorSchema = z.object({
@@ -233,6 +235,14 @@ doctorsRouter.post("/", requireRole("admin", "receptionist"), async (req, res) =
       body: `${doctor.name} · ${doctor.specialization}`,
       type: "success",
       href: `/doctors/${doctor._id}`,
+    });
+    void bustCachePrefix("dashboard:stats:");
+    void dispatchWebhook("doctor.created", {
+      id: String(doctor._id),
+      name: doctor.name,
+      specialization: doctor.specialization,
+      hospital: doctor.hospital,
+      email: doctor.email,
     });
     return res.status(201).json({ ...doctor.toObject(), id: doctor._id, patientCount: 0 });
   } catch (error: unknown) {

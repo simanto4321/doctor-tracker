@@ -18,8 +18,15 @@ const userSchema = new Schema(
       default: "receptionist",
       index: true,
     },
+    emailVerified: { type: Boolean, default: false, index: true },
+    emailVerifyToken: { type: String, default: null },
+    emailVerifyExpires: { type: Date, default: null },
     resetToken: { type: String, default: null },
     resetTokenExpires: { type: Date, default: null },
+    loginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date, default: null },
+    lastLoginAt: { type: Date, default: null },
+    digestEnabled: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

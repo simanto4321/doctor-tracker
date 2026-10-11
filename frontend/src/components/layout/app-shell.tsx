@@ -32,7 +32,7 @@ import { Button } from "@/components/ui/button";
 import { CommandPalette } from "@/components/command-palette";
 import { HoverInfo } from "@/components/ui/hover-info";
 import { useAuthStore } from "@/lib/auth-store";
-import { apiRequest } from "@/lib/api";
+import { apiLogout, apiRequest } from "@/lib/api";
 import { useI18n, type Locale } from "@/lib/i18n";
 import { useThemeStore } from "@/lib/theme-store";
 import type { NotificationItem } from "@/lib/types";
@@ -70,7 +70,6 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const clearSession = useAuthStore((s) => s.clearSession);
   const theme = useThemeStore((s) => s.theme);
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const { t, locale, setLocale, locales } = useI18n();
@@ -79,8 +78,8 @@ export function AppShell({
   const [unread, setUnread] = useState(0);
   const [bellOpen, setBellOpen] = useState(false);
 
-  function logout() {
-    clearSession();
+  async function logout() {
+    await apiLogout();
     toast.success(t("toast.signedOut"));
     router.replace("/login");
   }

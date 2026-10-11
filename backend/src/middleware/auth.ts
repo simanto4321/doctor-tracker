@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { cookieNames, getJwtSecret } from "../utils/tokens.js";
 
 export type AuthPayload = {
   userId: string;
@@ -15,21 +16,22 @@ declare global {
   }
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+function readAccessToken(req: Request) {
   const header = req.headers.authorization;
-  const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined;
+  if (header?.startsWith("Bearer ")) return header.slice(7);
+  const cookieToken = req.cookies?.[cookieNames.ACCESS_COOKIE];
+  if (typeof cookieToken === "string" && cookieToken) return cookieToken;
+  return undefined;
+}
 
+export function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const token = readAccessToken(req);
   if (!token) {
     return res.status(401).json({ message: "Authentication required" });
   }
 
   try {
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      return res.status(500).json({ message: "JWT secret is not configured" });
-    }
-
-    const payload = jwt.verify(token, secret) as AuthPayload;
+    const payload = jwt.verify(token, getJwtSecret()) as AuthPayload;
     req.auth = payload;
     return next();
   } catch {

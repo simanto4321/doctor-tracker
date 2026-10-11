@@ -11,7 +11,9 @@ Doctor Tracker is a calm clinical operations desk: authenticated staff sign in w
 ### Prerequisites
 
 - Node.js 20+
-- Optional: MongoDB 7+ (if unset, an in-memory MongoDB starts automatically)
+- Optional: MongoDB Atlas (or local MongoDB 7+) — if `MONGODB_URI` is unset, an in-memory MongoDB starts automatically
+- Optional: Redis for dashboard aggregation cache (`REDIS_URL`)
+- Optional: SMTP (`SMTP_URL`) for real email; otherwise messages go to the email outbox + console
 
 ### Install
 
@@ -22,16 +24,36 @@ cp frontend/.env.example frontend/.env.local
 npm run install:all
 ```
 
+### MongoDB Atlas
+
+1. Create a free Atlas cluster and database user.
+2. Allow your IP (or `0.0.0.0/0` for demos).
+3. Set in `backend/.env`:
+
+```bash
+MONGODB_URI=mongodb+srv://USER:PASS@cluster0.xxxxx.mongodb.net/doctor-tracker?retryWrites=true&w=majority
+```
+
+Without `MONGODB_URI`, the API uses `mongodb-memory-server` so demos still boot.
+
 ### Run locally
 
 ```bash
 # Terminal 1 — API
 npm run dev:backend
 # → http://127.0.0.1:4821
+# → Swagger UI http://127.0.0.1:4821/api/docs
 
 # Terminal 2 — UI
 npm run dev:frontend
 # → http://127.0.0.1:4317
+```
+
+### Tests
+
+```bash
+npm run test          # Vitest unit tests (backend)
+npm run test:e2e --prefix frontend   # Playwright (API + UI must be running)
 ```
 
 ### Demo credentials
@@ -45,7 +67,8 @@ Admin-only: **Team** registration + **Audit log**.
 Receptionist: create/edit doctors & patients.  
 Doctor role: read-focused access (mutations blocked by API + UI).
 
-Forgot password demo: `/forgot-password` (reset token returned in API response).
+Forgot password demo: `/forgot-password` (reset token returned in API response).  
+Email verify demo: `/verify-email` (token from register response / outbox when SMTP is unset).
 
 See `.env.example`, `backend/.env.example`, and `frontend/.env.example`.
 
@@ -53,15 +76,17 @@ See `.env.example`, `backend/.env.example`, and `frontend/.env.example`.
 
 ```
 Browser (Next.js :4317)
-   │  REST + JWT (+ role claim)
+   │  REST + JWT / httpOnly cookies · credentials include
    ▼
 Express API (:4821)
-   │  Zod validation · requireAuth / requireRole · audit trail
+   │  Zod · rate limits · requireAuth / requireRole · audit · Redis cache
    ▼
-MongoDB (external URI or memory server)
+MongoDB Atlas (or memory server) + optional Redis + SMTP outbox
 ```
 
-- **Auth:** login, admin register, forgot/reset password; JWT carries `admin | receptionist | doctor`.
+- **Auth:** access JWT + rotating refresh tokens in httpOnly cookies, login lockout, email verification, forgot/reset password.
+- **Platform:** global + auth rate limits, activity email digests, Swagger/OpenAPI at `/api/docs`, Redis/memory cache for dashboard stats.
+- **Interop:** HMAC-signed webhooks (`/api/webhooks`) and FHIR-lite Bundles (`/api/fhir/*`).
 - **Doctors / patients:** CRUD + edit UI + CSV export + search/filter/pagination + detail charts.
 - **Scheduling:** appointments with book/reschedule and calendar day view.
 - **Clinical chart:** visits, prescriptions, labs, vitals, condition history, referrals, documents.
@@ -69,7 +94,7 @@ MongoDB (external URI or memory server)
 - **Hover insights:** nav + feature titles + row hovers show live stats via `/api/insights/hover/:feature`.
 - **UX boosters:** dark/light theme, i18n (EN / বাংলা / ES / FR / हिन्दी / العربية), sortable table columns, skeleton loaders, delete undo toasts, create wizards, empty-state illustrations, a11y (skip link, ARIA, focus, contrast).
 - **Audit:** admin-readable log of create/update/delete/login/import actions.
-- **Dashboard:** date-range picker, hospital/specialty filters, gender & age charts, specialization heatmap, hospital comparison, doctor utilization, PNG/PDF export, saved presets.
+- **Dashboard:** date-range picker, hospital/specialty filters, gender & age charts, specialization heatmap, hospital comparison, doctor utilization, PNG/PDF export, saved presets (cached aggregations).
 
 ## Technical decisions
 
@@ -99,6 +124,12 @@ Calm Clinical Teal: light mint canvas, teal primary actions, pastel badges, Frau
 | Referral tracking | `/referrals` |
 | Document uploads | `/documents` (Mongo-backed demo storage) |
 | Hover feature details | Info icons + underlined rows across the app |
+| Refresh cookies + lockout | httpOnly `dt_access` / `dt_refresh`; `/api/auth/refresh` |
+| Email verification + digests | `/verify-email`, `POST /api/platform/digests/run` |
+| Swagger / OpenAPI | `/api/docs`, `/api/openapi.json` |
+| Webhooks (HMAC) | `POST /api/webhooks` — events on doctor/patient/appointment create |
+| FHIR-lite export | `/api/fhir/Patient`, `/Practitioner`, `/Bundle/$export` |
+| Redis dashboard cache | set `REDIS_URL`; response includes `_cache` hit metadata |
 
 ## Assignment polish features
 

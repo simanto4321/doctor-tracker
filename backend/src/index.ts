@@ -4,7 +4,10 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+import swaggerUi from "swagger-ui-express";
 import { connectDatabase } from "./config/db.js";
+import { globalLimiter } from "./middleware/rateLimit.js";
+import { openApiSpec } from "./openapi.js";
 import { authRouter } from "./routes/auth.js";
 import { dashboardRouter } from "./routes/dashboard.js";
 import { doctorsRouter } from "./routes/doctors.js";
@@ -22,13 +25,22 @@ import { hospitalsRouter } from "./routes/hospitals.js";
 import { vitalsRouter } from "./routes/vitals.js";
 import { importRouter } from "./routes/import.js";
 import { insightsRouter } from "./routes/insights.js";
+import { webhooksRouter } from "./routes/webhooks.js";
+import { fhirRouter } from "./routes/fhir.js";
+import { platformRouter } from "./routes/platform.js";
+import { initCache } from "./utils/cache.js";
 import { seedDatabase } from "./utils/seed.js";
 
 const app = express();
 const port = Number(process.env.PORT) || 4821;
 const clientOrigin = process.env.CLIENT_ORIGIN || "http://127.0.0.1:4317";
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
 app.use(
   cors({
     origin: [clientOrigin, "http://localhost:4317", "http://127.0.0.1:4317"],
@@ -38,10 +50,16 @@ app.use(
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
+app.use(globalLimiter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", service: "doctor-tracker-api" });
 });
+
+app.get("/api/openapi.json", (_req, res) => {
+  res.json(openApiSpec);
+});
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec, { explorer: true }));
 
 app.use("/api/auth", authRouter);
 app.use("/api/doctors", doctorsRouter);
@@ -60,6 +78,9 @@ app.use("/api/vitals", vitalsRouter);
 app.use("/api/import", importRouter);
 app.use("/api/insights", insightsRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/webhooks", webhooksRouter);
+app.use("/api/fhir", fhirRouter);
+app.use("/api/platform", platformRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);
@@ -68,6 +89,7 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
 
 async function start() {
   await connectDatabase();
+  await initCache();
 
   if (process.env.SEED_ON_START !== "false") {
     const seed = await seedDatabase();
@@ -76,6 +98,7 @@ async function start() {
 
   app.listen(port, "0.0.0.0", () => {
     console.log(`[api] Doctor Tracker API listening on http://127.0.0.1:${port}`);
+    console.log(`[api] Swagger docs → http://127.0.0.1:${port}/api/docs`);
   });
 }
 

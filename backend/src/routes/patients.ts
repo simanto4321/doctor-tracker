@@ -13,7 +13,9 @@ import { Referral } from "../models/Referral.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { escapeRegex, parseDateRange, parsePagination } from "../utils/parseQuery.js";
 import { writeAudit } from "../utils/audit.js";
+import { bustCachePrefix } from "../utils/cache.js";
 import { toCsv } from "../utils/csv.js";
+import { dispatchWebhook } from "../utils/webhooks.js";
 
 const patientSchema = z.object({
   name: z.string().min(2).max(120),
@@ -235,6 +237,15 @@ patientsRouter.post("/", requireRole("admin", "receptionist"), async (req, res) 
   const populated = await Patient.findById(patient._id)
     .populate("doctor", "name specialization hospital")
     .lean();
+
+  void bustCachePrefix("dashboard:stats:");
+  void dispatchWebhook("patient.created", {
+    id: String(patient._id),
+    name: patient.name,
+    condition: patient.condition,
+    doctor: String(patient.doctor),
+    email: patient.email,
+  });
 
   return res.status(201).json({ ...populated, id: patient._id });
 });

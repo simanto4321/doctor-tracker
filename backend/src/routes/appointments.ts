@@ -7,6 +7,8 @@ import { Notification } from "../models/Notification.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { parsePagination } from "../utils/parseQuery.js";
 import { writeAudit } from "../utils/audit.js";
+import { bustCachePrefix } from "../utils/cache.js";
+import { dispatchWebhook } from "../utils/webhooks.js";
 
 const appointmentSchema = z.object({
   doctor: z.string().min(1),
@@ -95,6 +97,16 @@ appointmentsRouter.post("/", requireRole("admin", "receptionist"), async (req, r
     .populate("doctor", "name specialization")
     .populate("patient", "name condition")
     .lean();
+
+  void bustCachePrefix("dashboard:stats:");
+  void dispatchWebhook("appointment.created", {
+    id: String(appointment._id),
+    doctor: String(appointment.doctor),
+    patient: String(appointment.patient),
+    startsAt: startsAt.toISOString(),
+    endsAt: endsAt.toISOString(),
+    status: appointment.status,
+  });
 
   return res.status(201).json({ ...populated, id: appointment._id });
 });

@@ -6,6 +6,7 @@ import { Appointment } from "../models/Appointment.js";
 import { Visit } from "../models/Visit.js";
 import { FilterPreset } from "../models/FilterPreset.js";
 import { requireAuth } from "../middleware/auth.js";
+import { cachedJson } from "../utils/cache.js";
 import { escapeRegex } from "../utils/parseQuery.js";
 
 export const dashboardRouter = Router();
@@ -47,6 +48,10 @@ dashboardRouter.get("/stats", async (req, res) => {
   const specialization =
     typeof req.query.specialization === "string" ? req.query.specialization.trim() : "";
 
+  const cacheKey = `dashboard:stats:${rangeStart.toISOString().slice(0, 10)}:${rangeEnd.toISOString().slice(0, 10)}:${hospital}:${specialization}`;
+  const ttl = Number(process.env.DASHBOARD_CACHE_TTL || 30);
+
+  const payload = await cachedJson(cacheKey, ttl, async () => {
   const doctorFilter: Record<string, unknown> = { deletedAt: null };
   if (hospital) doctorFilter.hospital = new RegExp(escapeRegex(hospital), "i");
   if (specialization) {
@@ -401,7 +406,10 @@ dashboardRouter.get("/stats", async (req, res) => {
           ? (patient.doctor as { name: string }).name
           : "Unassigned",
     })),
+  };
   });
+
+  return res.json(payload);
 });
 
 const presetSchema = z.object({
