@@ -644,7 +644,7 @@ export default function DoctorsPage() {
                   <span className="text-sm font-semibold">Doctor photo</span>
                   <div className="flex flex-wrap items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3">
                     <DoctorPhoto name={doctorForm.name || "Doctor"} photoUrl={doctorForm.photoUrl} size="lg" />
-                    <div className="min-w-[200px] flex-1 space-y-2">
+                    <div className="min-w-0 flex-1 space-y-2">
                       <Input
                         type="file"
                         accept="image/*"

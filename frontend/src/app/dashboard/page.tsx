@@ -359,7 +359,7 @@ export default function DashboardPage() {
 
           <div className="flex flex-wrap items-end gap-2 border-t border-[var(--border)] pt-4">
             <HoverInfo feature="dashboard-presets" label="Saved presets" />
-            <label className="min-w-[12rem] flex-1 space-y-1.5">
+            <label className="min-w-0 w-full flex-1 space-y-1.5 sm:min-w-[12rem]">
               <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 Save current filters
               </span>
@@ -452,14 +452,14 @@ export default function DashboardPage() {
               />
             </div>
 
-            <section className="panel animate-rise p-5">
-              <h2 className="mb-4 font-display text-2xl tracking-tight text-[var(--foreground)] uppercase">
+            <section className="panel animate-rise p-3 sm:p-5">
+              <h2 className="mb-3 font-display text-xl tracking-tight text-[var(--foreground)] uppercase sm:mb-4 sm:text-2xl">
                 Doctors
               </h2>
               {doctors.length === 0 ? (
                 <p className="text-sm text-[var(--muted)]">No doctors match the current filters.</p>
               ) : (
-                <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6">
                   {doctors.map((doctor) => (
                     <EntityHover
                       key={doctor.id}
@@ -480,15 +480,15 @@ export default function DashboardPage() {
                         { label: "Patients", value: String(doctor.patientCount ?? 0) },
                       ]}
                     >
-                      <div className="flex w-full flex-col items-center rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-3 py-4 text-center transition hover:border-[var(--accent)] hover:shadow-sm">
+                      <div className="flex w-full flex-col items-center rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-2 py-3 text-center transition hover:border-[var(--accent)] hover:shadow-sm sm:px-3 sm:py-4">
                         <DoctorPhoto name={doctor.name} photoUrl={doctor.photoUrl} size="lg" />
-                        <p className="mt-3 line-clamp-2 text-sm font-semibold text-[var(--foreground)]">
+                        <p className="mt-2 line-clamp-2 text-xs font-semibold text-[var(--foreground)] sm:mt-3 sm:text-sm">
                           {doctor.name}
                         </p>
-                        <p className="mt-1 line-clamp-1 text-xs font-medium text-[var(--accent-strong)]">
+                        <p className="mt-0.5 line-clamp-1 text-[11px] font-medium text-[var(--accent-strong)] sm:mt-1 sm:text-xs">
                           {doctor.specialization}
                         </p>
-                        <p className="mt-0.5 line-clamp-1 text-[11px] text-[var(--muted)]">
+                        <p className="mt-0.5 hidden line-clamp-1 text-[11px] text-[var(--muted)] sm:block">
                           {doctor.title || doctor.department || doctor.hospital}
                         </p>
                       </div>
@@ -508,7 +508,7 @@ export default function DashboardPage() {
                   />
                   <Badge tone="accent">Date-based</Badge>
                 </div>
-                <div className="h-72">
+                <div className="h-52 sm:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={stats.patientTrend}>
                       <defs>

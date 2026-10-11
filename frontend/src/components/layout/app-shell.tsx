@@ -191,28 +191,30 @@ export function AppShell({
         ) : null}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--background)]/90 px-4 py-4 backdrop-blur md:px-8">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
+          <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--background)]/90 px-3 py-3 backdrop-blur sm:px-4 sm:py-4 md:px-8">
+            <div className="flex items-start justify-between gap-2 sm:gap-4">
+              <div className="flex min-w-0 flex-1 items-start gap-2 sm:gap-3">
                 <Button
                   variant="secondary"
                   size="icon"
-                  className="lg:hidden"
+                  className="shrink-0 lg:hidden"
                   onClick={() => setOpen(true)}
                   aria-label="Open menu"
                   aria-expanded={open}
                 >
                   {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
                 </Button>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h1 className="font-display text-2xl md:text-3xl">{title}</h1>
+                    <h1 className="font-display truncate text-xl sm:text-2xl md:text-3xl">{title}</h1>
                     {feature ? <HoverInfo feature={feature} label={title} /> : null}
                   </div>
-                  {subtitle ? <p className="mt-1 text-sm text-[var(--muted)]">{subtitle}</p> : null}
+                  {subtitle ? (
+                    <p className="mt-1 line-clamp-2 text-xs text-[var(--muted)] sm:text-sm">{subtitle}</p>
+                  ) : null}
                 </div>
               </div>
-              <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
                 <Button
                   variant="secondary"
                   size="icon"
@@ -228,9 +230,9 @@ export function AppShell({
                 </Button>
                 <label className="inline-flex items-center gap-1">
                   <span className="sr-only">{t("action.language")}</span>
-                  <Languages className="h-4 w-4 text-[var(--muted)]" aria-hidden />
+                  <Languages className="hidden h-4 w-4 text-[var(--muted)] sm:block" aria-hidden />
                   <select
-                    className="h-10 max-w-[9.5rem] rounded-xl border border-[var(--border)] bg-[var(--surface)] px-2 text-sm font-semibold text-[var(--foreground)]"
+                    className="h-10 max-w-[5.5rem] rounded-xl border border-[var(--border)] bg-[var(--surface)] px-1.5 text-xs font-semibold text-[var(--foreground)] sm:max-w-[9.5rem] sm:px-2 sm:text-sm"
                     value={locale}
                     onChange={(e) => setLocale(e.target.value as Locale)}
                     aria-label={t("action.language")}
@@ -274,7 +276,7 @@ export function AppShell({
                   </HoverInfo>
                   {bellOpen ? (
                     <div
-                      className="absolute right-0 mt-2 w-80 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-xl"
+                      className="absolute right-0 mt-2 w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-xl"
                       role="menu"
                       aria-label="Notifications"
                     >

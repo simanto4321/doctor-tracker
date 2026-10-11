@@ -29,9 +29,12 @@ export function EntityHover({
   const anchorRef = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [coords, setCoords] = useState<{ top: number; left: number; place: "top" | "bottom" } | null>(
-    null
-  );
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    place: "top" | "bottom";
+    width: number;
+  } | null>(null);
 
   useLayoutEffect(() => {
     setMounted(true);
@@ -46,26 +49,27 @@ export function EntityHover({
     const update = () => {
       const rect = anchorRef.current!.getBoundingClientRect();
       const gap = 10;
-      const cardWidth = 288;
+      const edge = 8;
+      const cardWidth = Math.min(288, Math.max(220, window.innerWidth - edge * 2));
       const estimatedHeight = 220;
       let place = placement;
 
       // Prefer requested side; flip if there isn't enough room
-      if (place === "top" && rect.top < estimatedHeight + gap + 8) {
+      if (place === "top" && rect.top < estimatedHeight + gap + edge) {
         place = "bottom";
-      } else if (place === "bottom" && window.innerHeight - rect.bottom < estimatedHeight + gap + 8) {
+      } else if (place === "bottom" && window.innerHeight - rect.bottom < estimatedHeight + gap + edge) {
         place = "top";
       }
 
       // Anchor Y: bottom edge of card when above, top edge when below
-      const top =
-        place === "top" ? rect.top - gap : rect.bottom + gap;
+      const top = place === "top" ? rect.top - gap : rect.bottom + gap;
       const left = rect.left + rect.width / 2 - cardWidth / 2;
 
       setCoords({
         top,
-        left: Math.max(8, Math.min(left, window.innerWidth - cardWidth - 8)),
+        left: Math.max(edge, Math.min(left, window.innerWidth - cardWidth - edge)),
         place,
+        width: cardWidth,
       });
     };
 
@@ -91,12 +95,11 @@ export function EntityHover({
       ? createPortal(
           <div
             role="tooltip"
-            className="pointer-events-none fixed z-[80] w-72 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xl text-[var(--foreground)]"
+            className="pointer-events-none fixed z-[80] max-w-[calc(100vw-1rem)] rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xl text-[var(--foreground)]"
             style={{
-              top: coords.place === "top" ? undefined : coords.top,
-              bottom:
-                coords.place === "top" ? window.innerHeight - coords.top : undefined,
+              top: coords.top,
               left: coords.left,
+              width: coords.width,
               transform: coords.place === "top" ? "translateY(-100%)" : undefined,
             }}
           >

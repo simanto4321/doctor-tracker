@@ -15,8 +15,13 @@ export function DoctorPhoto({
   className?: string;
 }) {
   const dims =
-    size === "sm" ? "h-10 w-10" : size === "lg" ? "h-20 w-20" : "h-14 w-14";
-  const icon = size === "sm" ? "h-4 w-4" : size === "lg" ? "h-8 w-8" : "h-6 w-6";
+    size === "sm"
+      ? "h-10 w-10"
+      : size === "lg"
+        ? "h-14 w-14 sm:h-20 sm:w-20"
+        : "h-12 w-12 sm:h-14 sm:w-14";
+  const icon =
+    size === "sm" ? "h-4 w-4" : size === "lg" ? "h-6 w-6 sm:h-8 sm:w-8" : "h-5 w-5 sm:h-6 sm:w-6";
 
   if (photoUrl) {
     return (

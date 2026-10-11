@@ -56,24 +56,24 @@ export default function LoginPage() {
       <div className="login-orb login-orb-b animate-pulse-soft" aria-hidden />
 
       <div className="relative mx-auto grid min-h-screen max-w-6xl lg:grid-cols-[1.15fr_0.85fr]">
-        {/* Brand plane */}
-        <section className="relative flex flex-col justify-between px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
+        {/* Brand plane — compact on phones, full hero on desktop */}
+        <section className="relative flex flex-col justify-start px-5 pt-6 pb-2 sm:px-10 sm:pt-10 lg:justify-between lg:px-14 lg:py-14">
           <div className="animate-rise flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--accent)] text-white shadow-sm">
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--accent)] text-white shadow-sm sm:h-11 sm:w-11">
               <Stethoscope className="h-5 w-5" aria-hidden />
             </span>
-            <span className="font-display text-lg tracking-tight text-[var(--foreground)]">
+            <span className="font-display text-lg tracking-tight text-[var(--foreground)] sm:text-xl">
               Doctor Tracker
             </span>
           </div>
 
-          <div className="animate-rise-delay-1 relative z-[1] my-12 max-w-xl lg:my-0">
-            <h1 className="font-display text-[clamp(2.75rem,7vw,5.25rem)] leading-[0.92] tracking-[-0.03em] text-[var(--foreground)]">
+          <div className="animate-rise-delay-1 relative z-[1] mt-5 mb-4 max-w-xl lg:my-0 lg:mt-0">
+            <h1 className="hidden font-display text-[clamp(2.75rem,7vw,5.25rem)] leading-[0.92] tracking-[-0.03em] text-[var(--foreground)] lg:block">
               Doctor
               <br />
               Tracker
             </h1>
-            <p className="mt-6 max-w-md text-base leading-relaxed text-[var(--muted)] sm:text-lg">
+            <p className="max-w-md text-sm leading-relaxed text-[var(--muted)] sm:text-base lg:mt-6 lg:text-lg">
               Sign in to manage doctors, patients, and clinic analytics from one calm operations
               desk.
             </p>
@@ -101,10 +101,10 @@ export default function LoginPage() {
         </section>
 
         {/* Sign-in */}
-        <section className="relative flex items-center justify-center px-4 pb-10 sm:px-8 lg:px-10 lg:py-14">
-          <div className="login-form-panel animate-rise-delay-2 w-full max-w-[420px] p-6 sm:p-8">
-            <div className="mb-7">
-              <p className="font-display text-3xl tracking-tight text-[var(--foreground)]">
+        <section className="relative flex items-start justify-center px-4 pb-10 sm:px-8 lg:items-center lg:px-10 lg:py-14">
+          <div className="login-form-panel animate-rise-delay-2 w-full max-w-[420px] p-5 sm:p-8">
+            <div className="mb-6 sm:mb-7">
+              <p className="font-display text-2xl tracking-tight text-[var(--foreground)] sm:text-3xl">
                 Sign in
               </p>
               <p className="mt-1.5 text-sm text-[var(--muted)]">
@@ -163,7 +163,7 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-5 flex items-center justify-between gap-3 text-sm">
+            <div className="mt-5 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
               <Link
                 href="/forgot-password"
                 className="font-semibold text-[var(--accent-strong)] underline-offset-4 hover:underline"
@@ -173,7 +173,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowDemo((v) => !v)}
-                className="text-[var(--muted)] transition hover:text-[var(--foreground)]"
+                className="text-left text-[var(--muted)] transition hover:text-[var(--foreground)] sm:text-right"
               >
                 {showDemo ? "Hide demo logins" : "Demo logins"}
               </button>
