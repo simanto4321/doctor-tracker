@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Vital } from "../models/Vital.js";
 import { Patient } from "../models/Patient.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
+import { parsePagination } from "../utils/parseQuery.js";
 import { writeAudit } from "../utils/audit.js";
 
 const vitalSchema = z.object({
@@ -19,6 +20,27 @@ const vitalSchema = z.object({
 
 export const vitalsRouter = Router();
 vitalsRouter.use(requireAuth);
+
+vitalsRouter.get("/", async (req, res) => {
+  const { page, limit, skip } = parsePagination(req.query as Record<string, unknown>);
+  const filter: Record<string, unknown> = { deletedAt: null };
+  if (typeof req.query.patient === "string" && req.query.patient) {
+    filter.patient = req.query.patient;
+  }
+  const [items, total] = await Promise.all([
+    Vital.find(filter)
+      .populate("patient", "name condition")
+      .sort({ recordedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Vital.countDocuments(filter),
+  ]);
+  return res.json({
+    items: items.map((item) => ({ ...item, id: item._id })),
+    pagination: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
+  });
+});
 
 vitalsRouter.get("/patient/:patientId", async (req, res) => {
   const items = await Vital.find({ patient: req.params.patientId, deletedAt: null })
