@@ -1,7 +1,8 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { apiRequest } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -31,9 +32,16 @@ export function HoverInfo({
   children,
 }: HoverInfoProps) {
   const tipId = useId();
+  const anchorRef = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);
   const [insight, setInsight] = useState<Insight | null>(null);
   const [loading, setLoading] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open || insight) return;
@@ -61,17 +69,78 @@ export function HoverInfo({
     };
   }, [open, insight, feature, label, fallbackSummary]);
 
-  const position =
-    side === "top"
-      ? "bottom-full left-1/2 mb-2 -translate-x-1/2"
-      : side === "left"
-        ? "right-full top-1/2 mr-2 -translate-y-1/2"
-        : side === "right"
-          ? "left-full top-1/2 ml-2 -translate-y-1/2"
-          : "top-full left-1/2 mt-2 -translate-x-1/2";
+  useLayoutEffect(() => {
+    if (!open || !anchorRef.current) {
+      setCoords(null);
+      return;
+    }
+    const rect = anchorRef.current.getBoundingClientRect();
+    const gap = 8;
+    let top = rect.bottom + gap;
+    let left = rect.left + rect.width / 2 - 144;
+    if (side === "top") {
+      top = rect.top - gap;
+      left = rect.left + rect.width / 2 - 144;
+    } else if (side === "left") {
+      top = rect.top + rect.height / 2 - 40;
+      left = rect.left - 288 - gap;
+    } else if (side === "right") {
+      top = rect.top + rect.height / 2 - 40;
+      left = rect.right + gap;
+    }
+    const maxLeft = window.innerWidth - 300;
+    const maxTop = window.innerHeight - 16;
+    setCoords({
+      top: Math.max(8, Math.min(top, maxTop)),
+      left: Math.max(8, Math.min(left, maxLeft)),
+    });
+  }, [open, side]);
+
+  const tooltip =
+    open && mounted && coords
+      ? createPortal(
+          <div
+            id={tipId}
+            role="tooltip"
+            className="pointer-events-none fixed z-[80] w-72 rounded-2xl border border-[var(--border)] bg-white p-3 text-left shadow-xl"
+            style={{ top: coords.top, left: coords.left }}
+          >
+            <p className="font-display text-base text-[var(--foreground)]">
+              {insight?.title || label || feature}
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
+              {loading ? "Loading latest details…" : insight?.summary || fallbackSummary}
+            </p>
+            {insight?.stats?.length ? (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {insight.stats.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="rounded-xl bg-[var(--surface-soft)] px-2.5 py-2"
+                  >
+                    <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
+                      {stat.label}
+                    </p>
+                    <p className="mt-0.5 text-sm font-semibold text-[var(--foreground)]">
+                      {stat.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {insight?.updatedAt ? (
+              <p className="mt-2 text-[10px] text-[var(--muted)]">
+                Updated {new Date(insight.updatedAt).toLocaleTimeString()}
+              </p>
+            ) : null}
+          </div>,
+          document.body
+        )
+      : null;
 
   return (
     <span
+      ref={anchorRef}
       className={cn("relative inline-flex items-center", className)}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
@@ -88,44 +157,7 @@ export function HoverInfo({
           <Info className="h-3.5 w-3.5" />
         </button>
       )}
-
-      {open ? (
-        <div
-          id={tipId}
-          role="tooltip"
-          className={cn(
-            "absolute z-50 w-72 rounded-2xl border border-[var(--border)] bg-white p-3 text-left shadow-xl",
-            position
-          )}
-        >
-          <p className="font-display text-base text-[var(--foreground)]">
-            {insight?.title || label || feature}
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-            {loading ? "Loading latest details…" : insight?.summary || fallbackSummary}
-          </p>
-          {insight?.stats?.length ? (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {insight.stats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-xl bg-[var(--surface-soft)] px-2.5 py-2"
-                >
-                  <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
-                    {stat.label}
-                  </p>
-                  <p className="mt-0.5 text-sm font-semibold text-[var(--foreground)]">{stat.value}</p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-          {insight?.updatedAt ? (
-            <p className="mt-2 text-[10px] text-[var(--muted)]">
-              Updated {new Date(insight.updatedAt).toLocaleTimeString()}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
+      {tooltip}
     </span>
   );
 }
