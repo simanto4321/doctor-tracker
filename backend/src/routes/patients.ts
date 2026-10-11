@@ -13,8 +13,10 @@ import { Referral } from "../models/Referral.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { escapeRegex, parseDateRange, parsePagination } from "../utils/parseQuery.js";
 import { writeAudit } from "../utils/audit.js";
+import { summarizePatientNotes } from "../utils/aiSummary.js";
 import { bustCachePrefix } from "../utils/cache.js";
 import { toCsv } from "../utils/csv.js";
+import { computePatientRiskFlags } from "../utils/riskFlags.js";
 import { dispatchWebhook } from "../utils/webhooks.js";
 
 const patientSchema = z.object({
@@ -216,6 +218,27 @@ patientsRouter.get("/:id", async (req, res) => {
     referrals: referrals.map((r) => ({ ...r, id: r._id })),
     notesTimeline,
   });
+});
+
+patientsRouter.get("/:id/ai-summary", async (req, res) => {
+  const summary = await summarizePatientNotes(String(req.params.id));
+  if (!summary) return res.status(404).json({ message: "Patient not found" });
+  return res.json(summary);
+});
+
+patientsRouter.get("/:id/risk-flags", async (req, res) => {
+  const flags = await computePatientRiskFlags(String(req.params.id));
+  if (!flags) return res.status(404).json({ message: "Patient not found" });
+  return res.json(flags);
+});
+
+patientsRouter.post("/:id/risk-flags/refresh", requireRole("admin", "receptionist", "doctor"), async (req, res) => {
+  const flags = await computePatientRiskFlags(String(req.params.id));
+  if (!flags) return res.status(404).json({ message: "Patient not found" });
+  await writeAudit(req.auth, "update", "patient", String(req.params.id), {
+    riskRefresh: flags.overall,
+  });
+  return res.json(flags);
 });
 
 patientsRouter.post("/", requireRole("admin", "receptionist"), async (req, res) => {

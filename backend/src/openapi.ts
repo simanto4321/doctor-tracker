@@ -101,5 +101,26 @@ export const openApiSpec = {
       get: { summary: "List patients", responses: { "200": { description: "Paged list" } } },
       post: { summary: "Create patient", responses: { "201": { description: "Created" } } },
     },
+    "/api/patients/{id}/ai-summary": {
+      get: { summary: "AI-assisted summary of recent notes", responses: { "200": { description: "Summary" } } },
+    },
+    "/api/patients/{id}/risk-flags": {
+      get: { summary: "Computed clinical risk flags", responses: { "200": { description: "Alerts" } } },
+    },
+    "/api/messages": {
+      get: { summary: "Staff inbox/sent", responses: { "200": { description: "Messages" } } },
+      post: { summary: "Send internal message", responses: { "201": { description: "Created" } } },
+    },
+    "/api/telemedicine": {
+      get: { summary: "List telemedicine sessions", responses: { "200": { description: "Sessions" } } },
+      post: { summary: "Schedule telemedicine session", responses: { "201": { description: "Created" } } },
+    },
+    "/api/beds/occupancy": {
+      get: { summary: "Ward/bed occupancy board", responses: { "200": { description: "Occupancy" } } },
+    },
+    "/api/invoices": {
+      get: { summary: "List visit invoices", responses: { "200": { description: "Invoices" } } },
+      post: { summary: "Create invoice for a visit", responses: { "201": { description: "Created" } } },
+    },
   },
 } as const;

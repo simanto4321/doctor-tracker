@@ -130,6 +130,12 @@ Calm Clinical Teal: light mint canvas, teal primary actions, pastel badges, Frau
 | Webhooks (HMAC) | `POST /api/webhooks` — events on doctor/patient/appointment create |
 | FHIR-lite export | `/api/fhir/Patient`, `/Practitioner`, `/Bundle/$export` |
 | Redis dashboard cache | set `REDIS_URL`; response includes `_cache` hit metadata |
+| AI note summary | Patient chart → **AI note summary** (`GET /api/patients/:id/ai-summary`) |
+| Risk flags | High BP / diabetes follow-up alerts on patient chart |
+| Staff messages | `/messages` — internal inbox/sent |
+| Telemedicine | `/telemedicine` — join link + status placeholder |
+| Ward occupancy | `/wards` — bed board by hospital ward |
+| Billing / invoices | `/billing` — invoices tied to visits |
 
 ## Assignment polish features
 

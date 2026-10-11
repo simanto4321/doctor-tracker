@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
+  BedDouble,
   Bell,
   Building2,
   CalendarDays,
@@ -15,8 +16,10 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageSquare,
   Moon,
   Pill,
+  Receipt,
   ScrollText,
   Search,
   Stethoscope,
@@ -24,6 +27,7 @@ import {
   Trash2,
   UserPlus,
   Users,
+  Video,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -47,6 +51,10 @@ const nav = [
   { href: "/labs", labelKey: "nav.labs", icon: FlaskConical, feature: "labs" },
   { href: "/referrals", labelKey: "nav.referrals", icon: GitBranchPlus, feature: "referrals" },
   { href: "/hospitals", labelKey: "nav.hospitals", icon: Building2, feature: "hospitals" },
+  { href: "/wards", labelKey: "nav.wards", icon: BedDouble, feature: "wards" },
+  { href: "/telemedicine", labelKey: "nav.telemedicine", icon: Video, feature: "telemedicine" },
+  { href: "/messages", labelKey: "nav.messages", icon: MessageSquare, feature: "messages" },
+  { href: "/billing", labelKey: "nav.billing", icon: Receipt, feature: "billing" },
   { href: "/documents", labelKey: "nav.documents", icon: FolderOpen, feature: "documents" },
   { href: "/import", labelKey: "nav.import", icon: FileUp, feature: "import" },
   { href: "/trash", labelKey: "nav.trash", icon: Trash2, feature: "trash", adminOnly: true },

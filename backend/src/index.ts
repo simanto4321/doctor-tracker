@@ -28,6 +28,10 @@ import { insightsRouter } from "./routes/insights.js";
 import { webhooksRouter } from "./routes/webhooks.js";
 import { fhirRouter } from "./routes/fhir.js";
 import { platformRouter } from "./routes/platform.js";
+import { messagesRouter } from "./routes/messages.js";
+import { telemedicineRouter } from "./routes/telemedicine.js";
+import { bedsRouter } from "./routes/beds.js";
+import { invoicesRouter } from "./routes/invoices.js";
 import { initCache } from "./utils/cache.js";
 import { seedDatabase } from "./utils/seed.js";
 
@@ -81,6 +85,10 @@ app.use("/api/dashboard", dashboardRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/fhir", fhirRouter);
 app.use("/api/platform", platformRouter);
+app.use("/api/messages", messagesRouter);
+app.use("/api/telemedicine", telemedicineRouter);
+app.use("/api/beds", bedsRouter);
+app.use("/api/invoices", invoicesRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);

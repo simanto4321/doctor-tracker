@@ -59,6 +59,16 @@ export default function PatientDetailPage() {
     notes: "",
     followUpAt: "",
   });
+  const [aiSummary, setAiSummary] = useState<{
+    summary: string;
+    mode: string;
+    sources?: Record<string, number | boolean>;
+  } | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [risk, setRisk] = useState<{
+    overall: string;
+    alerts: Array<{ code: string; severity: string; title: string; detail: string }>;
+  } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -66,10 +76,47 @@ export default function PatientDetailPage() {
       const data = await apiRequest<PatientDetail>(`/patients/${params.id}`);
       setPatient(data);
       setVisitForm((f) => ({ ...f, diagnosis: data.condition }));
+      const flags = await apiRequest<{
+        overall: string;
+        alerts: Array<{ code: string; severity: string; title: string; detail: string }>;
+      }>(`/patients/${params.id}/risk-flags`);
+      setRisk(flags);
+      setPatient((p) => (p ? { ...p, riskFlag: flags.overall as Patient["riskFlag"] } : p));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load patient");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function generateSummary() {
+    setAiLoading(true);
+    try {
+      const data = await apiRequest<{
+        summary: string;
+        mode: string;
+        sources?: Record<string, number | boolean>;
+      }>(`/patients/${params.id}/ai-summary`);
+      setAiSummary(data);
+      toast.success("AI summary ready");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to summarize");
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  async function refreshRisk() {
+    try {
+      const flags = await apiRequest<{
+        overall: string;
+        alerts: Array<{ code: string; severity: string; title: string; detail: string }>;
+      }>(`/patients/${params.id}/risk-flags/refresh`, { method: "POST" });
+      setRisk(flags);
+      setPatient((p) => (p ? { ...p, riskFlag: flags.overall as Patient["riskFlag"] } : p));
+      toast.success("Risk flags refreshed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to refresh risk");
     }
   }
 
@@ -162,6 +209,14 @@ export default function PatientDetailPage() {
                 <p className="text-sm text-[var(--muted)]">
                   {patient.email} · {patient.phone}
                 </p>
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button type="button" size="sm" variant="secondary" onClick={generateSummary} disabled={aiLoading}>
+                    {aiLoading ? "Summarizing…" : "AI note summary"}
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={refreshRisk}>
+                    Refresh risk flags
+                  </Button>
+                </div>
               </div>
               <form className="space-y-2 rounded-2xl bg-[var(--surface-soft)] p-4" onSubmit={addVisit}>
                 <p className="font-semibold">Log visit / encounter</p>
@@ -190,6 +245,63 @@ export default function PatientDetailPage() {
                   Save visit
                 </Button>
               </form>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="panel p-5">
+                <FeatureTitle
+                  feature="patients"
+                  title="AI summary"
+                  subtitle="Handoff summary from recent notes, vitals, and labs."
+                />
+                {aiSummary ? (
+                  <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-[var(--surface-soft)] p-4 text-sm leading-relaxed">
+                    {aiSummary.summary}
+                  </pre>
+                ) : (
+                  <p className="mt-3 text-sm text-[var(--muted)]">
+                    Generate a concise clinical summary for staff handoffs.
+                  </p>
+                )}
+                {aiSummary?.mode ? (
+                  <p className="mt-2 text-xs text-[var(--muted)]">Mode: {aiSummary.mode}</p>
+                ) : null}
+              </div>
+              <div className="panel p-5">
+                <FeatureTitle
+                  feature="patients"
+                  title="Risk flags"
+                  subtitle="High BP, diabetes follow-up, and related alerts."
+                />
+                <div className="mt-3 space-y-2">
+                  {(risk?.alerts || []).length === 0 ? (
+                    <p className="text-sm text-[var(--muted)]">No active risk alerts.</p>
+                  ) : (
+                    risk!.alerts.map((alert) => (
+                      <div
+                        key={alert.code}
+                        className="rounded-xl border border-[var(--border)] px-3 py-2"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold">{alert.title}</p>
+                          <Badge
+                            tone={
+                              alert.severity === "high"
+                                ? "danger"
+                                : alert.severity === "medium"
+                                  ? "warning"
+                                  : "neutral"
+                            }
+                          >
+                            {alert.severity}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 text-sm text-[var(--muted)]">{alert.detail}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">

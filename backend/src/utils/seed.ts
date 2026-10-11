@@ -12,6 +12,10 @@ import { Vital } from "../models/Vital.js";
 import { Referral } from "../models/Referral.js";
 import { DocumentFile } from "../models/DocumentFile.js";
 import { ConditionEvent } from "../models/ConditionEvent.js";
+import { Bed } from "../models/Bed.js";
+import { Message } from "../models/Message.js";
+import { TeleSession } from "../models/TeleSession.js";
+import { Invoice } from "../models/Invoice.js";
 
 const doctorsSeed = [
   {
@@ -171,6 +175,7 @@ export async function seedDatabase() {
   const doctorCount = await Doctor.countDocuments();
   if (doctorCount > 0) {
     console.log("[seed] Data already present — skipping sample clinical data");
+    await seedSmartAddons(email);
     return {
       adminEmail: email,
       adminPassword: password,
@@ -219,16 +224,28 @@ export async function seedDatabase() {
   });
   await Appointment.insertMany(appointments);
 
-  const visits = createdPatients.slice(0, 18).map((patient, index) => ({
-    doctor: doctors[index % doctors.length]._id,
-    patient: patient._id,
-    visitedAt: daysAgo(index + 2),
-    diagnosis: patient.condition,
-    treatment: "Continuing care plan",
-    followUpAt: index % 3 === 0 ? hoursFromNow(48 + index * 8) : null,
-    notes: "Seeded clinical visit",
-  }));
-  await Visit.insertMany(visits);
+  const visits = createdPatients.slice(0, 18).map((patient, index) => {
+    const diabetes = /diabetes/i.test(patient.condition);
+    let followUpAt: Date | null = null;
+    if (diabetes || index % 4 === 0) {
+      // Overdue follow-ups for diabetes / every 4th patient — drives risk flags
+      followUpAt = daysAgo(2 + (index % 5));
+    } else if (index % 3 === 0) {
+      followUpAt = hoursFromNow(48 + index * 8);
+    }
+    return {
+      doctor: doctors[index % doctors.length]._id,
+      patient: patient._id,
+      visitedAt: daysAgo(index + 2),
+      diagnosis: patient.condition,
+      treatment: "Continuing care plan",
+      followUpAt,
+      notes: diabetes
+        ? "Diabetes visit — review glucose log and meds adherence."
+        : "Seeded clinical visit",
+    };
+  });
+  const createdVisits = await Visit.insertMany(visits);
 
   const prescriptions = createdPatients.slice(0, 14).map((patient, index) => ({
     doctor: doctors[index % doctors.length]._id,
@@ -304,17 +321,20 @@ export async function seedDatabase() {
   });
   await LabResult.insertMany(labs);
 
-  const vitals = createdPatients.slice(0, 16).map((patient, index) => ({
-    patient: patient._id,
-    recordedAt: daysAgo(index % 10),
-    heartRate: 62 + (index % 28),
-    bloodPressureSys: 110 + (index % 30),
-    bloodPressureDia: 70 + (index % 15),
-    temperatureC: 36.4 + (index % 10) / 10,
-    spo2: 96 + (index % 4),
-    weightKg: 55 + (index % 35),
-    notes: "Seeded vitals check",
-  }));
+  const vitals = createdPatients.slice(0, 16).map((patient, index) => {
+    const highBp = index % 3 === 0 || /hypertension/i.test(patient.condition);
+    return {
+      patient: patient._id,
+      recordedAt: daysAgo(index % 10),
+      heartRate: 62 + (index % 28),
+      bloodPressureSys: highBp ? 142 + (index % 20) : 110 + (index % 20),
+      bloodPressureDia: highBp ? 92 + (index % 10) : 70 + (index % 12),
+      temperatureC: 36.4 + (index % 10) / 10,
+      spo2: index % 7 === 0 ? 92 : 96 + (index % 4),
+      weightKg: 55 + (index % 35),
+      notes: highBp ? "Elevated BP reading — recheck" : "Seeded vitals check",
+    };
+  });
   await Vital.insertMany(vitals);
 
   const conditionEvents = createdPatients.slice(0, 18).map((patient, index) => ({
@@ -384,12 +404,131 @@ export async function seedDatabase() {
     },
   ]);
 
+  await seedSmartAddons(email, {
+    doctors,
+    patients: createdPatients,
+    visits: createdVisits,
+  });
+
   console.log(
-    `[seed] Created ${doctors.length} doctors, ${createdPatients.length} patients, labs/vitals/referrals/docs`
+    `[seed] Created ${doctors.length} doctors, ${createdPatients.length} patients, labs/vitals/referrals/docs + smart add-ons`
   );
   return {
     adminEmail: email,
     adminPassword: password,
     seededFresh: true,
   };
+}
+
+async function seedSmartAddons(
+  adminEmail: string,
+  preloaded?: {
+    doctors: Array<{ _id: unknown }>;
+    patients: Array<{ _id: unknown; name?: string; condition?: string }>;
+    visits: Array<{ _id: unknown; patient: unknown; doctor: unknown; diagnosis?: string }>;
+  }
+) {
+  const bedCount = await Bed.countDocuments();
+  if (bedCount > 0) {
+    console.log("[seed] Smart add-ons already present — skipping");
+    return;
+  }
+
+  const hospitals = await Hospital.find({ deletedAt: null }).lean();
+  const doctors = preloaded?.doctors || (await Doctor.find({ deletedAt: null }).limit(6).lean());
+  const patients =
+    preloaded?.patients || (await Patient.find({ deletedAt: null }).limit(36).lean());
+  const visits =
+    preloaded?.visits || (await Visit.find({ deletedAt: null }).limit(18).lean());
+  const users = await User.find().lean();
+  const admin = users.find((u) => u.email === adminEmail) || users[0];
+  const desk = users.find((u) => u.role === "receptionist") || users[1] || users[0];
+
+  if (hospitals.length) {
+    const bedDocs = hospitals.flatMap((hospital, hIndex) => {
+      const wards = ["Med-Surg A", "ICU", "Telemetry"].slice(0, hIndex === 3 ? 2 : 3);
+      return wards.flatMap((ward, wIndex) =>
+        Array.from({ length: 4 }, (_, bIndex) => {
+          const occupy = (hIndex + wIndex + bIndex) % 3 === 0;
+          const patient = occupy ? patients[(hIndex * 4 + wIndex + bIndex) % patients.length] : null;
+          return {
+            hospital: hospital._id,
+            ward,
+            bedNumber: `${ward.slice(0, 1)}${wIndex + 1}-${String(bIndex + 1).padStart(2, "0")}`,
+            status: occupy ? "occupied" : bIndex === 3 ? "cleaning" : "available",
+            patient: patient?._id || null,
+            admittedAt: occupy ? daysAgo(bIndex + 1) : null,
+            notes: occupy ? "Seeded admission" : "",
+          };
+        })
+      );
+    });
+    await Bed.insertMany(bedDocs);
+  }
+
+  if (admin && desk && patients.length) {
+    await Message.insertMany([
+      {
+        from: desk._id,
+        to: admin._id,
+        subject: "Diabetes follow-ups",
+        body: "Several Type 2 Diabetes patients have overdue follow-ups — please review risk flags.",
+        patient: patients.find((p) => /diabetes/i.test(String(p.condition || "")))?._id || null,
+      },
+      {
+        from: admin._id,
+        to: desk._id,
+        subject: "Tele visit tomorrow",
+        body: "Confirm telemedicine link is ready for the Harborview cardiology slot.",
+        patient: patients[0]?._id || null,
+      },
+    ]);
+  }
+
+  if (doctors.length && patients.length) {
+    await TeleSession.insertMany(
+      patients.slice(0, 5).map((patient, index) => {
+        const idHint = `seed-${index + 1}`;
+        return {
+          patient: patient._id,
+          doctor: doctors[index % doctors.length]._id,
+          scheduledAt: hoursFromNow(12 + index * 6),
+          durationMinutes: 30,
+          joinUrl: `https://meet.doctortracker.local/session/${idHint}`,
+          status: index === 0 ? "in_progress" : index === 4 ? "completed" : "scheduled",
+          reason: "Virtual follow-up",
+          notes: "Seeded telemedicine placeholder",
+          createdBy: admin?._id || null,
+        };
+      })
+    );
+  }
+
+  if (visits.length) {
+    await Invoice.insertMany(
+      visits.slice(0, 8).map((visit, index) => {
+        const consult = 120 + (index % 4) * 25;
+        const labs = index % 2 === 0 ? 45 : 0;
+        return {
+          visit: visit._id,
+          patient: visit.patient,
+          doctor: visit.doctor,
+          number: `INV-SEED-${String(index + 1).padStart(4, "0")}`,
+          lineItems: [
+            { description: "Office visit", quantity: 1, unitPrice: consult },
+            ...(labs
+              ? [{ description: "Lab draw / processing", quantity: 1, unitPrice: labs }]
+              : []),
+          ],
+          amount: consult + labs,
+          status: index % 3 === 0 ? "paid" : index % 3 === 1 ? "issued" : "draft",
+          issuedAt: index % 3 === 2 ? null : daysAgo(index),
+          paidAt: index % 3 === 0 ? daysAgo(index) : null,
+          notes: visit.diagnosis || "Visit invoice",
+        };
+      })
+    );
+  }
+
+  console.log("[seed] Smart add-ons: beds, messages, telemedicine, invoices");
 }
