@@ -477,6 +477,7 @@ export default function DashboardPage() {
                       href={`/doctors/${doctor.id}`}
                       title={doctor.name}
                       badge={doctor.specialization}
+                      placement="top"
                       className="w-full"
                       lines={[
                         { label: "Post", value: doctor.title || "Specialist" },
