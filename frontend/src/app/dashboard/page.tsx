@@ -454,19 +454,9 @@ export default function DashboardPage() {
             </div>
 
             <section className="panel animate-rise p-5">
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                <FeatureTitle
-                  feature="doctors"
-                  title="Doctors roster"
-                  subtitle="Photos, specialty, and profile hover — click a photo for full details."
-                />
-                <Link
-                  href="/doctors"
-                  className="text-sm font-semibold text-[var(--accent-strong)] underline-offset-4 hover:underline"
-                >
-                  Manage doctors →
-                </Link>
-              </div>
+              <h2 className="mb-4 font-display text-2xl tracking-tight text-[var(--foreground)] uppercase">
+                Doctors
+              </h2>
               {doctors.length === 0 ? (
                 <p className="text-sm text-[var(--muted)]">No doctors match the current filters.</p>
               ) : (
