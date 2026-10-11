@@ -170,15 +170,35 @@ Calm Clinical Teal: light mint canvas, teal primary actions, pastel badges, Frau
 
 ### Mobile
 
+Phone-framed captures at iPhone scale (light + dark).
+
+**Light**
+
 ![Mobile login](docs/screenshots/mobile-login.png)
 
 ![Mobile dashboard](docs/screenshots/mobile-dashboard.png)
+
+![Mobile analytics filters](docs/screenshots/mobile-dashboard-top.png)
 
 ![Mobile doctors](docs/screenshots/mobile-doctors.png)
 
 ![Mobile patients](docs/screenshots/mobile-patients.png)
 
 ![Mobile audit](docs/screenshots/mobile-audit.png)
+
+**Dark**
+
+![Mobile login dark](docs/screenshots/mobile-login-dark.png)
+
+![Mobile dashboard dark](docs/screenshots/mobile-dashboard-dark.png)
+
+![Mobile analytics filters dark](docs/screenshots/mobile-dashboard-top-dark.png)
+
+![Mobile doctors dark](docs/screenshots/mobile-doctors-dark.png)
+
+![Mobile patients dark](docs/screenshots/mobile-patients-dark.png)
+
+![Mobile audit dark](docs/screenshots/mobile-audit-dark.png)
 
 ## API map (core)
 
