@@ -194,6 +194,115 @@ html[lang="ar"] .font-display {
   animation: soft-pulse 4.5s ease-in-out infinite;
 }
 
+/* Login page atmosphere */
+.login-shell {
+  color: var(--foreground);
+}
+
+.login-atmosphere {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 12% 30%, rgba(15, 118, 110, 0.22), transparent 58%),
+    radial-gradient(ellipse 50% 45% at 88% 18%, rgba(29, 79, 120, 0.12), transparent 55%),
+    linear-gradient(125deg, #e7f4f0 0%, #f3f8f6 42%, #e4efe9 100%);
+}
+
+[data-theme="dark"] .login-atmosphere {
+  background:
+    radial-gradient(ellipse 70% 55% at 12% 30%, rgba(45, 212, 191, 0.14), transparent 58%),
+    radial-gradient(ellipse 50% 45% at 88% 18%, rgba(125, 211, 252, 0.08), transparent 55%),
+    linear-gradient(125deg, #101916 0%, #0f1715 42%, #0c1311 100%);
+}
+
+.login-atmosphere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(20, 48, 43, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 48, 43, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 70% at 30% 40%, black, transparent 75%);
+}
+
+[data-theme="dark"] .login-atmosphere::after {
+  background-image:
+    linear-gradient(rgba(231, 242, 238, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(231, 242, 238, 0.04) 1px, transparent 1px);
+}
+
+.login-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(56px);
+  pointer-events: none;
+}
+
+.login-orb-a {
+  left: -4rem;
+  top: 18%;
+  height: 14rem;
+  width: 14rem;
+  background: rgba(15, 118, 110, 0.28);
+}
+
+.login-orb-b {
+  right: -3rem;
+  bottom: 8%;
+  height: 16rem;
+  width: 16rem;
+  background: rgba(29, 79, 120, 0.16);
+}
+
+[data-theme="dark"] .login-orb-a {
+  background: rgba(45, 212, 191, 0.16);
+}
+
+[data-theme="dark"] .login-orb-b {
+  background: rgba(125, 211, 252, 0.1);
+}
+
+.login-form-panel {
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border-radius: 1.5rem;
+  box-shadow: 0 24px 60px rgba(20, 48, 43, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+[data-theme="dark"] .login-form-panel {
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.login-stethoscope {
+  animation: login-stethoscope-in 0.7s ease both;
+}
+
+@keyframes login-stethoscope-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.login-pulse-path {
+  stroke-dasharray: 520;
+  stroke-dashoffset: 520;
+  animation: login-pulse-draw 2.4s ease-out 0.35s forwards;
+}
+
+@keyframes login-pulse-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 .panel {
   border: 1px solid var(--border);
   background: var(--panel-bg);
@@ -241,7 +350,13 @@ table.data tr:last-child td {
   .animate-rise-delay-1,
   .animate-rise-delay-2,
   .animate-pulse-soft,
-  .animate-pulse {
+  .animate-pulse,
+  .login-pulse-path,
+  .login-stethoscope {
     animation: none !important;
+  }
+
+  .login-pulse-path {
+    stroke-dashoffset: 0;
   }
 }

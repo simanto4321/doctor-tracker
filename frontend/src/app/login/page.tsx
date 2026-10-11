@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, LockKeyhole, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, Stethoscope } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -17,8 +17,10 @@ export default function LoginPage() {
   const setSession = useAuthStore((s) => s.setSession);
   const [email, setEmail] = useState("admin@doctortracker.com");
   const [password, setPassword] = useState("Admin@123");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
     if (token) router.replace("/dashboard");
@@ -48,85 +50,151 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(15,118,110,0.18),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(29,79,120,0.14),transparent_30%),linear-gradient(135deg,#edf7f4,#f7faf9_45%,#e8f1ee)]" />
-      <div className="animate-pulse-soft absolute -left-16 top-24 h-56 w-56 rounded-full bg-teal-300/25 blur-3xl" />
-      <div className="animate-pulse-soft absolute bottom-10 right-10 h-64 w-64 rounded-full bg-sky-300/20 blur-3xl" />
+    <div className="login-shell relative min-h-screen overflow-hidden">
+      <div className="login-atmosphere" aria-hidden />
+      <div className="login-orb login-orb-a animate-pulse-soft" aria-hidden />
+      <div className="login-orb login-orb-b animate-pulse-soft" aria-hidden />
 
-      <div className="relative mx-auto grid min-h-screen max-w-6xl items-center gap-10 px-4 py-10 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="animate-rise hidden lg:block">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-border)] bg-white/70 px-3 py-1 text-xs font-semibold text-[var(--accent-strong)]">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Secure clinical admin access
+      <div className="relative mx-auto grid min-h-screen max-w-6xl lg:grid-cols-[1.15fr_0.85fr]">
+        {/* Brand plane */}
+        <section className="relative flex flex-col justify-between px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
+          <div className="animate-rise flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--accent)] text-white shadow-sm">
+              <Stethoscope className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="font-display text-lg tracking-tight text-[var(--foreground)]">
+              Doctor Tracker
+            </span>
           </div>
-          <h1 className="mt-6 font-display text-6xl leading-[0.95] text-[var(--foreground)]">
-            Doctor Tracker
-          </h1>
-          <p className="mt-5 max-w-lg text-lg text-[var(--muted)]">
-            A calm operations desk for managing doctors, patients, and clinic analytics without the
-            noise of a generic dashboard.
+
+          <div className="animate-rise-delay-1 relative z-[1] my-12 max-w-xl lg:my-0">
+            <div className="mb-5 inline-flex items-center justify-center rounded-[1.75rem] bg-[var(--accent)] p-4 text-white shadow-[0_18px_40px_rgba(15,118,110,0.28)]">
+              <Stethoscope className="login-stethoscope h-12 w-12 sm:h-14 sm:w-14" strokeWidth={1.6} aria-hidden />
+            </div>
+            <h1 className="font-display text-[clamp(2.75rem,7vw,5.25rem)] leading-[0.92] tracking-[-0.03em] text-[var(--foreground)]">
+              Doctor
+              <br />
+              Tracker
+            </h1>
+            <p className="mt-6 max-w-md text-base leading-relaxed text-[var(--muted)] sm:text-lg">
+              Sign in to manage doctors, patients, and clinic analytics from one calm operations
+              desk.
+            </p>
+
+            <svg
+              className="login-pulse-line mt-10 hidden w-full max-w-md text-[var(--accent)] lg:block"
+              viewBox="0 0 420 64"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                className="login-pulse-path"
+                d="M0 32 H70 L88 32 L102 8 L120 56 L138 32 H210 L228 32 L242 14 L260 50 L278 32 H420"
+                stroke="currentColor"
+                strokeWidth="2.25"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+
+          <p className="animate-rise-delay-2 hidden text-sm text-[var(--muted)] lg:block">
+            Role-based access for admin, receptionist, and doctor staff.
           </p>
         </section>
 
-        <section className="animate-rise-delay-1 panel mx-auto w-full max-w-md p-6 md:p-8">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent)] text-white">
-              <Activity className="h-5 w-5" />
+        {/* Sign-in */}
+        <section className="relative flex items-center justify-center px-4 pb-10 sm:px-8 lg:px-10 lg:py-14">
+          <div className="login-form-panel animate-rise-delay-2 w-full max-w-[420px] p-6 sm:p-8">
+            <div className="mb-7">
+              <p className="font-display text-3xl tracking-tight text-[var(--foreground)]">
+                Sign in
+              </p>
+              <p className="mt-1.5 text-sm text-[var(--muted)]">
+                Use your clinic account to enter the portal.
+              </p>
             </div>
-            <div>
-              <p className="font-display text-2xl">Sign in</p>
-              <p className="text-sm text-[var(--muted)]">Admin portal credentials required</p>
+
+            <form className="space-y-4" onSubmit={onSubmit}>
+              <label className="block space-y-1.5">
+                <span className="text-sm font-semibold text-[var(--foreground)]">Email</span>
+                <Input
+                  type="email"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@clinic.health"
+                  required
+                />
+              </label>
+
+              <label className="block space-y-1.5">
+                <span className="text-sm font-semibold text-[var(--foreground)]">Password</span>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="pr-12"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute top-1/2 right-3 -translate-y-1/2 rounded-lg p-1 text-[var(--muted)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--foreground)]"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </label>
+
+              {error ? (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-3 py-2 text-sm text-[var(--danger)]"
+                >
+                  {error}
+                </div>
+              ) : null}
+
+              <Button className="w-full" size="lg" disabled={loading}>
+                <LockKeyhole className="h-4 w-4" />
+                {loading ? "Signing in…" : "Enter portal"}
+              </Button>
+            </form>
+
+            <div className="mt-5 flex items-center justify-between gap-3 text-sm">
+              <Link
+                href="/forgot-password"
+                className="font-semibold text-[var(--accent-strong)] underline-offset-4 hover:underline"
+              >
+                Forgot password?
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowDemo((v) => !v)}
+                className="text-[var(--muted)] transition hover:text-[var(--foreground)]"
+              >
+                {showDemo ? "Hide demo logins" : "Demo logins"}
+              </button>
             </div>
-          </div>
 
-          <form className="space-y-4" onSubmit={onSubmit}>
-            <label className="block space-y-1.5">
-              <span className="text-sm font-semibold">Email</span>
-              <Input
-                type="email"
-                autoComplete="username"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-sm font-semibold">Password</span>
-              <Input
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </label>
-
-            {error ? (
-              <div className="rounded-xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-3 py-2 text-sm text-[var(--danger)]">
-                {error}
+            {showDemo ? (
+              <div className="animate-rise mt-4 space-y-2 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-3 text-xs leading-relaxed text-[var(--muted)]">
+                <p>
+                  Admin: <strong className="text-[var(--foreground)]">admin@doctortracker.com</strong>{" "}
+                  / <strong className="text-[var(--foreground)]">Admin@123</strong>
+                </p>
+                <p>
+                  Receptionist:{" "}
+                  <strong className="text-[var(--foreground)]">front.desk@doctortracker.com</strong>{" "}
+                  / <strong className="text-[var(--foreground)]">Desk@123</strong>
+                </p>
               </div>
             ) : null}
-
-            <Button className="w-full" size="lg" disabled={loading}>
-              <LockKeyhole className="h-4 w-4" />
-              {loading ? "Signing in…" : "Enter portal"}
-            </Button>
-          </form>
-
-          <div className="mt-4 flex justify-between text-sm">
-            <Link href="/forgot-password" className="font-semibold text-[var(--accent-strong)]">
-              Forgot password?
-            </Link>
-            <span className="text-[var(--muted)]">Roles: admin · receptionist · doctor</span>
-          </div>
-
-          <div className="mt-4 space-y-2 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-3 py-3 text-xs text-[var(--muted)]">
-            <p>
-              Admin: <strong>admin@doctortracker.com</strong> / <strong>Admin@123</strong>
-            </p>
-            <p>
-              Receptionist: <strong>front.desk@doctortracker.com</strong> / <strong>Desk@123</strong>
-            </p>
           </div>
         </section>
       </div>
