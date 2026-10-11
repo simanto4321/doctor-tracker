@@ -334,7 +334,7 @@ dashboardRouter.get("/stats", async (req, res) => {
     specializations: await Doctor.distinct("specialization", { deletedAt: null }),
   };
 
-  return res.json({
+  return {
     totals: {
       doctors: totalDoctors,
       patients: totalPatients,
