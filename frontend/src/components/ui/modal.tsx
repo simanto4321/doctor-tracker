@@ -29,7 +29,7 @@ export function Modal({
       >
         <div className="flex items-start justify-between gap-4 border-b border-[var(--border)] px-5 py-4">
           <div>
-            <h2 className="font-[family-name:var(--font-display)] text-xl text-[var(--foreground)]">
+            <h2 className="font-display text-xl text-[var(--foreground)]">
               {title}
             </h2>
             {description ? <p className="mt-1 text-sm text-[var(--muted)]">{description}</p> : null}

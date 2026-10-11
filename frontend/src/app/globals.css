@@ -24,8 +24,6 @@
   --danger: #be123c;
   --danger-soft: #ffe4e9;
   --danger-border: #fda4af;
-  --font-display: var(--font-display);
-  --font-body: var(--font-body);
 }
 
 * {
@@ -44,6 +42,10 @@ body {
     linear-gradient(180deg, #f4f9f7 0%, var(--background) 48%, #e8f1ee 100%);
   color: var(--foreground);
   font-family: var(--font-body), "Segoe UI", sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
 }
 
 @keyframes rise-in {

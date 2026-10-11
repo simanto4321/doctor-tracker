@@ -43,7 +43,7 @@ function StatCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm text-[var(--muted)]">{label}</p>
-          <p className="mt-2 font-[family-name:var(--font-display)] text-3xl">{value}</p>
+          <p className="mt-2 font-display text-3xl">{value}</p>
           <p className="mt-2 text-xs text-[var(--muted)]">{hint}</p>
         </div>
         <div className="rounded-2xl bg-[var(--accent-soft)] p-3 text-[var(--accent-strong)]">
@@ -90,7 +90,7 @@ export default function DashboardPage() {
           </div>
         ) : stats ? (
           <div className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
               <StatCard
                 label="Total doctors"
                 value={stats.totals.doctors}
@@ -125,7 +125,7 @@ export default function DashboardPage() {
               <div className="panel animate-rise p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
-                    <h2 className="font-[family-name:var(--font-display)] text-xl">
+                    <h2 className="font-display text-xl">
                       Patient intake trend
                     </h2>
                     <p className="text-sm text-[var(--muted)]">Last 30 days of registrations</p>
@@ -158,7 +158,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="panel animate-rise-delay-1 p-5">
-                <h2 className="font-[family-name:var(--font-display)] text-xl">Condition mix</h2>
+                <h2 className="font-display text-xl">Condition mix</h2>
                 <p className="mb-4 text-sm text-[var(--muted)]">Share of tracked patient conditions</p>
                 <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
@@ -184,7 +184,7 @@ export default function DashboardPage() {
 
             <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
               <div className="panel animate-rise p-5">
-                <h2 className="font-[family-name:var(--font-display)] text-xl">Patients per doctor</h2>
+                <h2 className="font-display text-xl">Patients per doctor</h2>
                 <p className="mb-4 text-sm text-[var(--muted)]">Top caseloads in the clinic</p>
                 <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
@@ -208,7 +208,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="panel animate-rise-delay-1 p-5">
-                <h2 className="font-[family-name:var(--font-display)] text-xl">Recent patients</h2>
+                <h2 className="font-display text-xl">Recent patients</h2>
                 <p className="mb-4 text-sm text-[var(--muted)]">Newest records in the system</p>
                 <div className="space-y-3">
                   {stats.recentPatients.map((patient) => (

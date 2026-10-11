@@ -189,8 +189,8 @@ export default function PatientsPage() {
           </Button>
         }
       >
-        <div className="panel mb-5 grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-6">
-          <label className="space-y-1.5 xl:col-span-2">
+        <div className="panel mb-5 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <label className="space-y-1.5 sm:col-span-2 xl:col-span-2">
             <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
               Search
             </span>
@@ -245,6 +245,25 @@ export default function PatientsPage() {
           </label>
           <label className="space-y-1.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+              Doctor
+            </span>
+            <Select
+              value={doctor}
+              onChange={(e) => {
+                setPagination((p) => ({ ...p, page: 1 }));
+                setDoctor(e.target.value);
+              }}
+            >
+              <option value="">All doctors</option>
+              {doctors.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} · {item.specialization}
+                </option>
+              ))}
+            </Select>
+          </label>
+          <label className="space-y-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
               From
             </span>
             <Input
@@ -268,25 +287,6 @@ export default function PatientsPage() {
                 setTo(e.target.value);
               }}
             />
-          </label>
-          <label className="space-y-1.5 xl:col-span-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-              Doctor
-            </span>
-            <Select
-              value={doctor}
-              onChange={(e) => {
-                setPagination((p) => ({ ...p, page: 1 }));
-                setDoctor(e.target.value);
-              }}
-            >
-              <option value="">All doctors</option>
-              {doctors.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} · {item.specialization}
-                </option>
-              ))}
-            </Select>
           </label>
         </div>
 

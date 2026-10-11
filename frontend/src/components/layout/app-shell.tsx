@@ -53,7 +53,7 @@ export function AppShell({
           <Activity className="h-5 w-5" />
         </div>
         <div>
-          <p className="font-[family-name:var(--font-display)] text-xl leading-none text-[var(--foreground)]">
+          <p className="font-display text-xl leading-none text-[var(--foreground)]">
             Doctor Tracker
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">Clinical operations desk</p>
@@ -124,7 +124,7 @@ export function AppShell({
                   {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
                 </Button>
                 <div>
-                  <h1 className="font-[family-name:var(--font-display)] text-2xl md:text-3xl">
+                  <h1 className="font-display text-2xl md:text-3xl">
                     {title}
                   </h1>
                   {subtitle ? <p className="mt-1 text-sm text-[var(--muted)]">{subtitle}</p> : null}

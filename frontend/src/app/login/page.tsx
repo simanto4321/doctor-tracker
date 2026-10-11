@@ -58,7 +58,7 @@ export default function LoginPage() {
             <ShieldCheck className="h-3.5 w-3.5" />
             Secure clinical admin access
           </div>
-          <h1 className="mt-6 font-[family-name:var(--font-display)] text-6xl leading-[0.95] text-[var(--foreground)]">
+          <h1 className="mt-6 font-display text-6xl leading-[0.95] text-[var(--foreground)]">
             Doctor Tracker
           </h1>
           <p className="mt-5 max-w-lg text-lg text-[var(--muted)]">
@@ -87,7 +87,7 @@ export default function LoginPage() {
               <Activity className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-[family-name:var(--font-display)] text-2xl">Sign in</p>
+              <p className="font-display text-2xl">Sign in</p>
               <p className="text-sm text-[var(--muted)]">Admin portal credentials required</p>
             </div>
           </div>
