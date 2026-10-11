@@ -66,20 +66,6 @@ export default function LoginPage() {
             A calm operations desk for managing doctors, patients, and clinic analytics without the
             noise of a generic dashboard.
           </p>
-          <div className="mt-10 grid max-w-md gap-3">
-            {[
-              "Protected routes with JWT authentication",
-              "Searchable doctor and patient registries",
-              "Live charts for caseload and conditions",
-            ].map((item) => (
-              <div
-                key={item}
-                className="rounded-2xl border border-[var(--border)] bg-white/75 px-4 py-3 text-sm text-[var(--foreground)]"
-              >
-                {item}
-              </div>
-            ))}
-          </div>
         </section>
 
         <section className="animate-rise-delay-1 panel mx-auto w-full max-w-md p-6 md:p-8">
