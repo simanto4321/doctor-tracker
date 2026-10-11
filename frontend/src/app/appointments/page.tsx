@@ -88,7 +88,13 @@ export default function AppointmentsPage() {
     })().catch(() => undefined);
   }, []);
 
-  const hours = useMemo(() => Array.from({ length: 12 }, (_, i) => i + 8), []);
+  const hours = useMemo(() => {
+    const base = Array.from({ length: 14 }, (_, i) => i + 8); // 08:00–21:00
+    const extras = items
+      .map((item) => new Date(item.startsAt).getHours())
+      .filter((h) => h < 8 || h > 21);
+    return Array.from(new Set([...base, ...extras])).sort((a, b) => a - b);
+  }, [items]);
 
   const byHour = useMemo(() => {
     const map = new Map<number, Appointment[]>();
