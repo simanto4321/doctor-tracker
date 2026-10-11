@@ -14,6 +14,10 @@ const doctorSchema = new Schema(
       unique: true,
       index: true,
     },
+    department: { type: String, default: "", trim: true, index: true },
+    workingHours: { type: String, default: "Mon–Fri 09:00–17:00", trim: true },
+    bio: { type: String, default: "", trim: true },
+    deletedAt: { type: Date, default: null, index: true },
   },
   { timestamps: true }
 );

@@ -2,8 +2,13 @@ import { Router } from "express";
 import { z } from "zod";
 import { Doctor } from "../models/Doctor.js";
 import { Patient } from "../models/Patient.js";
-import { requireAuth } from "../middleware/auth.js";
+import { Visit } from "../models/Visit.js";
+import { Appointment } from "../models/Appointment.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
 import { escapeRegex, parseDateRange, parsePagination } from "../utils/parseQuery.js";
+import { writeAudit } from "../utils/audit.js";
+import { toCsv } from "../utils/csv.js";
+import { Notification } from "../models/Notification.js";
 
 const doctorSchema = z.object({
   name: z.string().min(2).max(120),
@@ -11,6 +16,9 @@ const doctorSchema = z.object({
   hospital: z.string().min(2).max(160),
   phone: z.string().min(7).max(30),
   email: z.string().email(),
+  department: z.string().max(120).optional(),
+  workingHours: z.string().max(120).optional(),
+  bio: z.string().max(800).optional(),
 });
 
 const patientUnderDoctorSchema = z.object({
@@ -21,20 +29,33 @@ const patientUnderDoctorSchema = z.object({
   phone: z.string().min(7).max(30),
   email: z.string().email(),
   notes: z.string().max(500).optional(),
+  riskFlag: z.enum(["none", "low", "medium", "high"]).optional(),
 });
 
 export const doctorsRouter = Router();
 doctorsRouter.use(requireAuth);
 
+function activeDoctorFilter(includeDeleted = false) {
+  return includeDeleted ? {} : { deletedAt: null };
+}
+
 doctorsRouter.get("/", async (req, res) => {
   const { page, limit, skip } = parsePagination(req.query as Record<string, unknown>);
   const dateFilter = parseDateRange(req.query as Record<string, unknown>);
-  const filter: Record<string, unknown> = { ...dateFilter };
+  const includeDeleted = req.query.includeDeleted === "true" && req.auth?.role === "admin";
+  const filter: Record<string, unknown> = { ...dateFilter, ...activeDoctorFilter(includeDeleted) };
+  if (includeDeleted && req.query.trashed === "true") filter.deletedAt = { $ne: null };
 
   const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
   const specialization =
     typeof req.query.specialization === "string" ? req.query.specialization.trim() : "";
   const hospital = typeof req.query.hospital === "string" ? req.query.hospital.trim() : "";
+  const sortField = typeof req.query.sort === "string" ? req.query.sort : "createdAt";
+  const sortDir = req.query.dir === "asc" ? 1 : -1;
+  const allowedSort = new Set(["createdAt", "name", "specialization", "hospital"]);
+  const sort: Record<string, 1 | -1> = {
+    [allowedSort.has(sortField) ? sortField : "createdAt"]: sortDir,
+  };
 
   if (search) {
     const rx = new RegExp(escapeRegex(search), "i");
@@ -44,13 +65,13 @@ doctorsRouter.get("/", async (req, res) => {
   if (hospital) filter.hospital = new RegExp(escapeRegex(hospital), "i");
 
   const [items, total] = await Promise.all([
-    Doctor.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    Doctor.find(filter).sort(sort).skip(skip).limit(limit).lean(),
     Doctor.countDocuments(filter),
   ]);
 
   const doctorIds = items.map((d) => d._id);
   const counts = await Patient.aggregate<{ _id: unknown; count: number }>([
-    { $match: { doctor: { $in: doctorIds } } },
+    { $match: { doctor: { $in: doctorIds }, deletedAt: null } },
     { $group: { _id: "$doctor", count: { $sum: 1 } } },
   ]);
   const countMap = new Map(counts.map((c) => [String(c._id), c.count]));
@@ -70,32 +91,69 @@ doctorsRouter.get("/", async (req, res) => {
   });
 });
 
+doctorsRouter.get("/export.csv", async (req, res) => {
+  const doctors = await Doctor.find({ deletedAt: null }).sort({ name: 1 }).lean();
+  const csv = toCsv(
+    doctors.map((d) => ({
+      name: d.name,
+      specialization: d.specialization,
+      hospital: d.hospital,
+      department: d.department || "",
+      phone: d.phone,
+      email: d.email,
+      workingHours: d.workingHours || "",
+      createdAt: d.createdAt,
+    }))
+  );
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", 'attachment; filename="doctors.csv"');
+  return res.send(csv);
+});
+
 doctorsRouter.get("/meta/filters", async (_req, res) => {
-  const [specializations, hospitals] = await Promise.all([
-    Doctor.distinct("specialization"),
-    Doctor.distinct("hospital"),
+  const [specializations, hospitals, departments] = await Promise.all([
+    Doctor.distinct("specialization", { deletedAt: null }),
+    Doctor.distinct("hospital", { deletedAt: null }),
+    Doctor.distinct("department", { deletedAt: null }),
   ]);
   return res.json({
     specializations: specializations.sort(),
     hospitals: hospitals.sort(),
+    departments: departments.filter(Boolean).sort(),
   });
 });
 
 doctorsRouter.get("/:id", async (req, res) => {
   const doctor = await Doctor.findById(req.params.id).lean();
-  if (!doctor) {
+  if (!doctor || (doctor.deletedAt && req.auth?.role !== "admin")) {
     return res.status(404).json({ message: "Doctor not found" });
   }
 
-  const patients = await Patient.find({ doctor: doctor._id }).sort({ createdAt: -1 }).lean();
+  const [patients, visits, appointments] = await Promise.all([
+    Patient.find({ doctor: doctor._id, deletedAt: null }).sort({ createdAt: -1 }).limit(20).lean(),
+    Visit.find({ doctor: doctor._id, deletedAt: null })
+      .populate("patient", "name")
+      .sort({ visitedAt: -1 })
+      .limit(10)
+      .lean(),
+    Appointment.find({ doctor: doctor._id, deletedAt: null, startsAt: { $gte: new Date() } })
+      .populate("patient", "name")
+      .sort({ startsAt: 1 })
+      .limit(10)
+      .lean(),
+  ]);
+
   return res.json({
     ...doctor,
     id: doctor._id,
     patients: patients.map((p) => ({ ...p, id: p._id })),
+    visits: visits.map((v) => ({ ...v, id: v._id })),
+    upcomingAppointments: appointments.map((a) => ({ ...a, id: a._id })),
+    patientCount: patients.length,
   });
 });
 
-doctorsRouter.post("/", async (req, res) => {
+doctorsRouter.post("/", requireRole("admin", "receptionist"), async (req, res) => {
   const parsed = doctorSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
@@ -103,6 +161,13 @@ doctorsRouter.post("/", async (req, res) => {
 
   try {
     const doctor = await Doctor.create(parsed.data);
+    await writeAudit(req.auth, "create", "doctor", doctor._id.toString());
+    await Notification.create({
+      title: "New doctor added",
+      body: `${doctor.name} · ${doctor.specialization}`,
+      type: "success",
+      href: `/doctors/${doctor._id}`,
+    });
     return res.status(201).json({ ...doctor.toObject(), id: doctor._id, patientCount: 0 });
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error && (error as { code: number }).code === 11000) {
@@ -112,21 +177,23 @@ doctorsRouter.post("/", async (req, res) => {
   }
 });
 
-doctorsRouter.put("/:id", async (req, res) => {
+doctorsRouter.put("/:id", requireRole("admin", "receptionist"), async (req, res) => {
   const parsed = doctorSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
   }
 
   try {
-    const doctor = await Doctor.findByIdAndUpdate(req.params.id, parsed.data, {
-      new: true,
-      runValidators: true,
-    }).lean();
+    const doctor = await Doctor.findOneAndUpdate(
+      { _id: req.params.id, deletedAt: null },
+      parsed.data,
+      { new: true, runValidators: true }
+    ).lean();
     if (!doctor) {
       return res.status(404).json({ message: "Doctor not found" });
     }
-    const patientCount = await Patient.countDocuments({ doctor: doctor._id });
+    await writeAudit(req.auth, "update", "doctor", String(doctor._id));
+    const patientCount = await Patient.countDocuments({ doctor: doctor._id, deletedAt: null });
     return res.json({ ...doctor, id: doctor._id, patientCount });
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error && (error as { code: number }).code === 11000) {
@@ -136,25 +203,44 @@ doctorsRouter.put("/:id", async (req, res) => {
   }
 });
 
-doctorsRouter.delete("/:id", async (req, res) => {
+doctorsRouter.delete("/:id", requireRole("admin"), async (req, res) => {
+  const hard = req.query.hard === "true";
   const doctor = await Doctor.findById(req.params.id);
   if (!doctor) {
     return res.status(404).json({ message: "Doctor not found" });
   }
 
-  await Patient.deleteMany({ doctor: doctor._id });
-  await doctor.deleteOne();
-  return res.json({ message: "Doctor and related patients deleted" });
+  if (hard) {
+    await Patient.updateMany({ doctor: doctor._id }, { deletedAt: new Date() });
+    await doctor.deleteOne();
+    await writeAudit(req.auth, "hard_delete", "doctor", doctor._id.toString());
+    return res.json({ message: "Doctor permanently deleted" });
+  }
+
+  doctor.deletedAt = new Date();
+  await doctor.save();
+  await Patient.updateMany({ doctor: doctor._id, deletedAt: null }, { deletedAt: new Date() });
+  await writeAudit(req.auth, "soft_delete", "doctor", doctor._id.toString());
+  return res.json({ message: "Doctor moved to trash" });
+});
+
+doctorsRouter.post("/:id/restore", requireRole("admin"), async (req, res) => {
+  const doctor = await Doctor.findById(req.params.id);
+  if (!doctor) return res.status(404).json({ message: "Doctor not found" });
+  doctor.deletedAt = null;
+  await doctor.save();
+  await writeAudit(req.auth, "restore", "doctor", doctor._id.toString());
+  return res.json({ ...doctor.toObject(), id: doctor._id });
 });
 
 doctorsRouter.get("/:id/patients", async (req, res) => {
-  const doctor = await Doctor.findById(req.params.id).lean();
+  const doctor = await Doctor.findOne({ _id: req.params.id, deletedAt: null }).lean();
   if (!doctor) {
     return res.status(404).json({ message: "Doctor not found" });
   }
 
   const { page, limit, skip } = parsePagination(req.query as Record<string, unknown>);
-  const filter: Record<string, unknown> = { doctor: doctor._id };
+  const filter: Record<string, unknown> = { doctor: doctor._id, deletedAt: null };
   const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
   if (search) {
     const rx = new RegExp(escapeRegex(search), "i");
@@ -178,8 +264,8 @@ doctorsRouter.get("/:id/patients", async (req, res) => {
   });
 });
 
-doctorsRouter.post("/:id/patients", async (req, res) => {
-  const doctor = await Doctor.findById(req.params.id);
+doctorsRouter.post("/:id/patients", requireRole("admin", "receptionist"), async (req, res) => {
+  const doctor = await Doctor.findOne({ _id: req.params.id, deletedAt: null });
   if (!doctor) {
     return res.status(404).json({ message: "Doctor not found" });
   }
@@ -193,15 +279,28 @@ doctorsRouter.post("/:id/patients", async (req, res) => {
   }
 
   const patient = await Patient.create({ ...parsed.data, doctor: doctor._id });
+  await writeAudit(req.auth, "create", "patient", patient._id.toString(), { doctorId: doctor._id });
+  await Notification.create({
+    title: "Patient assigned",
+    body: `${patient.name} assigned to ${doctor.name}`,
+    type: "info",
+    href: `/patients/${patient._id}`,
+  });
   return res.status(201).json({ ...patient.toObject(), id: patient._id });
 });
 
-doctorsRouter.delete("/:id/patients/:patientId", async (req, res) => {
-  const patient = await Patient.findOne({ _id: req.params.patientId, doctor: req.params.id });
+doctorsRouter.delete("/:id/patients/:patientId", requireRole("admin", "receptionist"), async (req, res) => {
+  const patient = await Patient.findOne({
+    _id: req.params.patientId,
+    doctor: req.params.id,
+    deletedAt: null,
+  });
   if (!patient) {
     return res.status(404).json({ message: "Patient not found for this doctor" });
   }
 
-  await patient.deleteOne();
+  patient.deletedAt = new Date();
+  await patient.save();
+  await writeAudit(req.auth, "soft_delete", "patient", patient._id.toString());
   return res.json({ message: "Patient removed from doctor list" });
 });

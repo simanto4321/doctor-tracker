@@ -12,7 +12,14 @@ const userSchema = new Schema(
       index: true,
     },
     passwordHash: { type: String, required: true },
-    role: { type: String, enum: ["admin"], default: "admin" },
+    role: {
+      type: String,
+      enum: ["admin", "receptionist", "doctor"],
+      default: "receptionist",
+      index: true,
+    },
+    resetToken: { type: String, default: null },
+    resetTokenExpires: { type: Date, default: null },
   },
   { timestamps: true }
 );

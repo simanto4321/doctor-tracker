@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Activity, LockKeyhole, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
@@ -126,8 +127,20 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-5 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-3 py-3 text-xs text-[var(--muted)]">
-            Demo admin: <strong>admin@doctortracker.com</strong> / <strong>Admin@123</strong>
+          <div className="mt-4 flex justify-between text-sm">
+            <Link href="/forgot-password" className="font-semibold text-[var(--accent-strong)]">
+              Forgot password?
+            </Link>
+            <span className="text-[var(--muted)]">Roles: admin · receptionist · doctor</span>
+          </div>
+
+          <div className="mt-4 space-y-2 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-3 py-3 text-xs text-[var(--muted)]">
+            <p>
+              Admin: <strong>admin@doctortracker.com</strong> / <strong>Admin@123</strong>
+            </p>
+            <p>
+              Receptionist: <strong>front.desk@doctortracker.com</strong> / <strong>Desk@123</strong>
+            </p>
           </div>
         </section>
       </div>

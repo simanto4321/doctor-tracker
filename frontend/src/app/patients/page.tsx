@@ -1,6 +1,7 @@
 "use client";
 
-import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Download, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AuthGuard } from "@/components/auth-guard";
@@ -11,6 +12,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { apiRequest, toQuery } from "@/lib/api";
+import { downloadCsv } from "@/lib/download";
+import { canManageRecords } from "@/lib/roles";
+import { useAuthStore } from "@/lib/auth-store";
 import type { Pagination, Patient } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
@@ -51,6 +55,8 @@ function doctorIdOf(patient: Patient) {
 }
 
 export default function PatientsPage() {
+  const user = useAuthStore((s) => s.user);
+  const canManage = canManageRecords(user);
   const [items, setItems] = useState<Patient[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -183,10 +189,28 @@ export default function PatientsPage() {
         title="Patients"
         subtitle="Search, filter, edit, and delete patient records across the clinic."
         action={
-          <Button onClick={openCreate} disabled={doctors.length === 0}>
-            <Plus className="h-4 w-4" />
-            Add patient
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                try {
+                  await downloadCsv("/patients/export.csv", "patients.csv");
+                  toast.success("Patients CSV downloaded");
+                } catch {
+                  toast.error("Export failed");
+                }
+              }}
+            >
+              <Download className="h-4 w-4" />
+              CSV
+            </Button>
+            {canManage ? (
+              <Button onClick={openCreate} disabled={doctors.length === 0}>
+                <Plus className="h-4 w-4" />
+                Add patient
+              </Button>
+            ) : null}
+          </div>
         }
       >
         <div className="panel mb-5 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -325,7 +349,12 @@ export default function PatientsPage() {
                   {items.map((patient) => (
                     <tr key={patient.id}>
                       <td>
-                        <p className="font-semibold">{patient.name}</p>
+                        <Link
+                          href={`/patients/${patient.id}`}
+                          className="font-semibold text-[var(--accent-strong)] hover:underline"
+                        >
+                          {patient.name}
+                        </Link>
                         <p className="text-xs text-[var(--muted)]">{patient.email}</p>
                       </td>
                       <td>
@@ -337,24 +366,33 @@ export default function PatientsPage() {
                       </td>
                       <td>{formatDate(patient.createdAt)}</td>
                       <td>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEdit(patient)}
-                            aria-label="Edit patient"
+                        {canManage ? (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEdit(patient)}
+                              aria-label="Edit patient"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onDelete(patient)}
+                              aria-label="Delete patient"
+                            >
+                              <Trash2 className="h-4 w-4 text-[var(--danger)]" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Link
+                            href={`/patients/${patient.id}`}
+                            className="text-sm font-semibold text-[var(--accent-strong)]"
                           >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onDelete(patient)}
-                            aria-label="Delete patient"
-                          >
-                            <Trash2 className="h-4 w-4 text-[var(--danger)]" />
-                          </Button>
-                        </div>
+                            View
+                          </Link>
+                        )}
                       </td>
                     </tr>
                   ))}

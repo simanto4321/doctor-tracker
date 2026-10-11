@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 export type AuthPayload = {
   userId: string;
   email: string;
-  role: string;
+  role: "admin" | "receptionist" | "doctor";
 };
 
 declare global {
@@ -35,4 +35,16 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   } catch {
     return res.status(401).json({ message: "Invalid or expired token" });
   }
+}
+
+export function requireRole(...roles: AuthPayload["role"][]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.auth) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    if (!roles.includes(req.auth.role)) {
+      return res.status(403).json({ message: "You do not have permission for this action" });
+    }
+    return next();
+  };
 }

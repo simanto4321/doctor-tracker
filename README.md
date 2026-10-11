@@ -4,7 +4,7 @@ Secure administrative web app for managing doctors, their patients, and clinic a
 
 ## Elevator pitch
 
-Doctor Tracker is a calm clinical operations desk: authenticated admins sign in, manage doctor and patient registries with search/filter/pagination, and read caseload insights from a Recharts-powered dashboard — all over a REST API backed by MongoDB.
+Doctor Tracker is a calm clinical operations desk: authenticated staff sign in with role-based access, manage doctor and patient registries with search/filter/pagination/CSV export, and read caseload insights from a Recharts-powered dashboard — all over a REST API backed by MongoDB.
 
 ## Setup guide
 
@@ -36,52 +36,102 @@ npm run dev:frontend
 
 ### Demo credentials
 
-| Field | Value |
-|-------|-------|
-| Email | `admin@doctortracker.com` |
-| Password | `Admin@123` |
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@doctortracker.com` | `Admin@123` |
+| Receptionist | `front.desk@doctortracker.com` | `Desk@123` |
 
-See root `.env.example` and `backend/.env.example` / `frontend/.env.example`.
+Admin-only: **Team** registration + **Audit log**.  
+Receptionist: create/edit doctors & patients.  
+Doctor role: read-focused access (mutations blocked by API + UI).
+
+Forgot password demo: `/forgot-password` (reset token returned in API response).
+
+See `.env.example`, `backend/.env.example`, and `frontend/.env.example`.
 
 ## System architecture
 
 ```
 Browser (Next.js :4317)
-   │  REST + JWT
+   │  REST + JWT (+ role claim)
    ▼
 Express API (:4821)
-   │  Mongoose + indexes
+   │  Zod validation · requireAuth / requireRole · audit trail
    ▼
 MongoDB (external URI or memory server)
 ```
 
-- **Auth:** `POST /api/auth/login` issues JWT; `requireAuth` guards doctors, patients, dashboard.
-- **Doctors / patients:** CRUD + search + date/condition filters + pagination.
-- **Dashboard:** aggregation pipelines for totals, patients-per-doctor, condition mix, 30-day trend.
+- **Auth:** login, admin register, forgot/reset password; JWT carries `admin | receptionist | doctor`.
+- **Doctors / patients:** CRUD + edit UI + CSV export + search/filter/pagination.
+- **Audit:** admin-readable log of create/update/delete/login actions.
+- **Dashboard:** aggregations for totals, patients-per-doctor, condition mix, date trends.
 
 ## Technical decisions
 
-1. **Split Next.js + Express** — Honors the REST client/server requirement, isolates API validation (Zod) and Mongo indexing from the UI, and keeps frontend deploys independent of API scaling.
-2. **Memory Mongo fallback + real indexes** — Schemas define text/date indexes for search and pagination. Without `MONGODB_URI`, `mongodb-memory-server` still exercises the same models so demos never block on DB install.
+1. **Split Next.js + Express** — Matches the REST client/server requirement, keeps API validation and Mongo indexing outside the UI bundle, and lets frontend/API scale independently.
+2. **RBAC in JWT + route guards** — Role is signed into the token and enforced with `requireRole` on mutating endpoints; the UI also hides create/edit/admin nav for non-admin/receptionist users so demos make the permission model obvious.
 
 ## Design direction
 
-Web references compared: Ember Dashboard, Clinova hospital admin, Spine clinical DS, CareIQ, Medixpro. Selected **Calm Clinical Teal** (Spine semantics + Clinova/Ember layout): light mint atmosphere, teal CTA, soft semantic badges, sidebar navigation, Fraunces display + Plus Jakarta Sans body.
+Calm Clinical Teal: light mint canvas, teal primary actions, pastel badges, Fraunces + Plus Jakarta Sans, sidebar operations desk.
+
+## Assignment polish features
+
+| Feature | Where |
+|---------|--------|
+| Doctor edit/update UI | Doctors page pencil → edit modal (`PUT /api/doctors/:id`) |
+| CSV export | Doctors + Patients **CSV** buttons |
+| Register | Team page (admin) → `POST /api/auth/register` |
+| Forgot password | `/forgot-password` |
+| Role-based access | JWT roles + API `requireRole` + UI gating |
+| Audit log | `/audit` (admin) |
 
 ## Visual evidence
 
-Add desktop & mobile screenshots of Login, Dashboard, Doctors, and Patients after running the app.
+### Desktop
 
-## API map
+![Desktop login](docs/screenshots/desktop-login.png)
+
+![Desktop dashboard](docs/screenshots/desktop-dashboard.png)
+
+![Desktop doctors](docs/screenshots/desktop-doctors.png)
+
+![Desktop doctor edit](docs/screenshots/desktop-doctor-edit.png)
+
+![Desktop patients](docs/screenshots/desktop-patients.png)
+
+![Desktop team register](docs/screenshots/desktop-team-register.png)
+
+![Desktop audit log](docs/screenshots/desktop-audit.png)
+
+![Desktop forgot password](docs/screenshots/desktop-forgot-password.png)
+
+### Mobile
+
+![Mobile login](docs/screenshots/mobile-login.png)
+
+![Mobile dashboard](docs/screenshots/mobile-dashboard.png)
+
+![Mobile doctors](docs/screenshots/mobile-doctors.png)
+
+![Mobile patients](docs/screenshots/mobile-patients.png)
+
+![Mobile audit](docs/screenshots/mobile-audit.png)
+
+## API map (core)
 
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/api/auth/login` | Login |
+| POST | `/api/auth/register` | Admin registers user |
+| POST | `/api/auth/forgot-password` | Issue reset token |
+| POST | `/api/auth/reset-password` | Reset with token |
 | GET | `/api/auth/me` | Current user |
 | GET/POST | `/api/doctors` | List / create |
-| GET/PUT/DELETE | `/api/doctors/:id` | Detail / update / delete |
-| GET/POST | `/api/doctors/:id/patients` | List / add under doctor |
-| DELETE | `/api/doctors/:id/patients/:patientId` | Remove from doctor |
+| PUT/DELETE | `/api/doctors/:id` | Update / soft-delete |
+| GET | `/api/doctors/export.csv` | Export doctors |
 | GET/POST | `/api/patients` | List / create |
-| PUT/DELETE | `/api/patients/:id` | Edit / delete |
+| PUT/DELETE | `/api/patients/:id` | Update / soft-delete |
+| GET | `/api/patients/export.csv` | Export patients |
+| GET | `/api/audit` | Admin audit trail |
 | GET | `/api/dashboard/stats` | Analytics payload |

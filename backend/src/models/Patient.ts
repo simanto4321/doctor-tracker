@@ -20,6 +20,13 @@ const patientSchema = new Schema(
       index: true,
     },
     notes: { type: String, default: "", trim: true },
+    riskFlag: {
+      type: String,
+      enum: ["none", "low", "medium", "high"],
+      default: "none",
+      index: true,
+    },
+    deletedAt: { type: Date, default: null, index: true },
   },
   { timestamps: true }
 );

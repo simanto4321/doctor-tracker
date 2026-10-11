@@ -1,6 +1,7 @@
 "use client";
 
-import { Plus, Search, Trash2, UserPlus, Users } from "lucide-react";
+import Link from "next/link";
+import { Download, Pencil, Plus, Search, Trash2, UserPlus, Users } from "lucide-react";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AuthGuard } from "@/components/auth-guard";
@@ -10,7 +11,11 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { PageSkeleton } from "@/components/ui/skeleton";
 import { apiRequest, toQuery } from "@/lib/api";
+import { downloadCsv } from "@/lib/download";
+import { canManageRecords } from "@/lib/roles";
+import { useAuthStore } from "@/lib/auth-store";
 import type { Doctor, Pagination, Patient } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
@@ -20,6 +25,9 @@ type DoctorForm = {
   hospital: string;
   phone: string;
   email: string;
+  department: string;
+  workingHours: string;
+  bio: string;
 };
 
 type PatientForm = {
@@ -30,6 +38,7 @@ type PatientForm = {
   phone: string;
   email: string;
   notes: string;
+  riskFlag: "none" | "low" | "medium" | "high";
 };
 
 const emptyDoctor: DoctorForm = {
@@ -38,6 +47,9 @@ const emptyDoctor: DoctorForm = {
   hospital: "",
   phone: "",
   email: "",
+  department: "",
+  workingHours: "Mon–Fri 09:00–17:00",
+  bio: "",
 };
 
 const emptyPatient: PatientForm = {
@@ -48,9 +60,12 @@ const emptyPatient: PatientForm = {
   phone: "",
   email: "",
   notes: "",
+  riskFlag: "none",
 };
 
 export default function DoctorsPage() {
+  const user = useAuthStore((s) => s.user);
+  const canManage = canManageRecords(user);
   const [items, setItems] = useState<Doctor[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -62,11 +77,14 @@ export default function DoctorsPage() {
   const [specialization, setSpecialization] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [sort, setSort] = useState("createdAt");
+  const [dir, setDir] = useState<"asc" | "desc">("desc");
   const [specializations, setSpecializations] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [doctorOpen, setDoctorOpen] = useState(false);
+  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [doctorForm, setDoctorForm] = useState<DoctorForm>(emptyDoctor);
   const [savingDoctor, setSavingDoctor] = useState(false);
 
@@ -88,6 +106,8 @@ export default function DoctorsPage() {
           specialization,
           from,
           to,
+          sort,
+          dir,
         })}`
       );
       setItems(data.items);
@@ -97,7 +117,7 @@ export default function DoctorsPage() {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, search, specialization, from, to]);
+  }, [pagination.page, pagination.limit, search, specialization, from, to, sort, dir]);
 
   useEffect(() => {
     loadDoctors();
@@ -114,6 +134,27 @@ export default function DoctorsPage() {
     })();
   }, []);
 
+  function openCreate() {
+    setEditingDoctor(null);
+    setDoctorForm(emptyDoctor);
+    setDoctorOpen(true);
+  }
+
+  function openEdit(doctor: Doctor) {
+    setEditingDoctor(doctor);
+    setDoctorForm({
+      name: doctor.name,
+      specialization: doctor.specialization,
+      hospital: doctor.hospital,
+      phone: doctor.phone,
+      email: doctor.email,
+      department: doctor.department || "",
+      workingHours: doctor.workingHours || "",
+      bio: doctor.bio || "",
+    });
+    setDoctorOpen(true);
+  }
+
   async function openDoctorPatients(doctor: Doctor) {
     setSelected(doctor);
     try {
@@ -124,17 +165,22 @@ export default function DoctorsPage() {
     }
   }
 
-  async function createDoctor(event: FormEvent) {
+  async function saveDoctor(event: FormEvent) {
     event.preventDefault();
     setSavingDoctor(true);
     try {
-      await apiRequest("/doctors", { method: "POST", body: doctorForm });
-      toast.success("Doctor created");
+      if (editingDoctor) {
+        await apiRequest(`/doctors/${editingDoctor.id}`, { method: "PUT", body: doctorForm });
+        toast.success("Doctor updated");
+      } else {
+        await apiRequest("/doctors", { method: "POST", body: doctorForm });
+        toast.success("Doctor created");
+      }
       setDoctorOpen(false);
       setDoctorForm(emptyDoctor);
       await loadDoctors();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Create failed");
+      toast.error(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSavingDoctor(false);
     }
@@ -147,10 +193,7 @@ export default function DoctorsPage() {
     try {
       await apiRequest(`/doctors/${selected.id}/patients`, {
         method: "POST",
-        body: {
-          ...patientForm,
-          age: Number(patientForm.age),
-        },
+        body: { ...patientForm, age: Number(patientForm.age) },
       });
       toast.success("Patient added");
       setPatientOpen(false);
@@ -180,20 +223,33 @@ export default function DoctorsPage() {
     <AuthGuard>
       <AppShell
         title="Doctors"
-        subtitle="Create clinicians, filter the roster, and manage each doctor’s patients."
+        subtitle="Create, edit, export, and manage each clinician’s caseload."
         action={
-          <Button
-            onClick={() => {
-              setDoctorForm(emptyDoctor);
-              setDoctorOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            Add doctor
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                try {
+                  await downloadCsv("/doctors/export.csv", "doctors.csv");
+                  toast.success("Doctors CSV downloaded");
+                } catch {
+                  toast.error("Export failed");
+                }
+              }}
+            >
+              <Download className="h-4 w-4" />
+              CSV
+            </Button>
+            {canManage ? (
+              <Button onClick={openCreate}>
+                <Plus className="h-4 w-4" />
+                Add doctor
+              </Button>
+            ) : null}
+          </div>
         }
       >
-        <div className="panel mb-5 grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-5">
+        <div className="panel mb-5 grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-6">
           <label className="space-y-1.5 xl:col-span-2">
             <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
               Search
@@ -232,6 +288,25 @@ export default function DoctorsPage() {
           </label>
           <label className="space-y-1.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+              Sort
+            </span>
+            <Select
+              value={`${sort}:${dir}`}
+              onChange={(e) => {
+                const [nextSort, nextDir] = e.target.value.split(":") as [string, "asc" | "desc"];
+                setSort(nextSort);
+                setDir(nextDir);
+              }}
+            >
+              <option value="createdAt:desc">Newest</option>
+              <option value="createdAt:asc">Oldest</option>
+              <option value="name:asc">Name A–Z</option>
+              <option value="name:desc">Name Z–A</option>
+              <option value="specialization:asc">Specialty A–Z</option>
+            </Select>
+          </label>
+          <label className="space-y-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
               From
             </span>
             <Input
@@ -259,7 +334,7 @@ export default function DoctorsPage() {
         </div>
 
         {loading ? (
-          <div className="panel p-10 text-[var(--muted)]">Loading doctors…</div>
+          <PageSkeleton />
         ) : error ? (
           <div className="rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-soft)] p-5 text-[var(--danger)]">
             {error}
@@ -269,7 +344,7 @@ export default function DoctorsPage() {
             title="No doctors match these filters"
             description="Try clearing search or date filters, or create the first doctor record."
             action={
-              <Button onClick={() => setDoctorOpen(true)}>
+              <Button onClick={openCreate}>
                 <Plus className="h-4 w-4" />
                 Add doctor
               </Button>
@@ -293,7 +368,12 @@ export default function DoctorsPage() {
                   {items.map((doctor) => (
                     <tr key={doctor.id}>
                       <td>
-                        <p className="font-semibold">{doctor.name}</p>
+                        <Link
+                          href={`/doctors/${doctor.id}`}
+                          className="font-semibold text-[var(--accent-strong)] hover:underline"
+                        >
+                          {doctor.name}
+                        </Link>
                         <p className="text-xs text-[var(--muted)]">{doctor.email}</p>
                       </td>
                       <td>
@@ -305,10 +385,17 @@ export default function DoctorsPage() {
                       </td>
                       <td>{formatDate(doctor.createdAt)}</td>
                       <td>
-                        <Button variant="secondary" size="sm" onClick={() => openDoctorPatients(doctor)}>
-                          <Users className="h-4 w-4" />
-                          Patients
-                        </Button>
+                        <div className="flex flex-wrap gap-1">
+                          {canManage ? (
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(doctor)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          ) : null}
+                          <Button variant="secondary" size="sm" onClick={() => openDoctorPatients(doctor)}>
+                            <Users className="h-4 w-4" />
+                            Patients
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -343,34 +430,46 @@ export default function DoctorsPage() {
         <Modal
           open={doctorOpen}
           onClose={() => setDoctorOpen(false)}
-          title="Create doctor"
-          description="Add a clinician to the hospital roster."
+          title={editingDoctor ? "Edit doctor" : "Create doctor"}
+          description="Keep clinician profile and hospital assignment current."
+          wide
         >
-          <form className="grid gap-3" onSubmit={createDoctor}>
+          <form className="grid gap-3 md:grid-cols-2" onSubmit={saveDoctor}>
             {(
               [
                 ["name", "Full name"],
                 ["specialization", "Specialization"],
                 ["hospital", "Hospital"],
+                ["department", "Department"],
                 ["phone", "Phone"],
                 ["email", "Email"],
+                ["workingHours", "Working hours"],
               ] as const
             ).map(([key, label]) => (
               <label key={key} className="space-y-1.5">
                 <span className="text-sm font-semibold">{label}</span>
                 <Input
                   type={key === "email" ? "email" : "text"}
-                  required
+                  required={key !== "department" && key !== "workingHours"}
                   value={doctorForm[key]}
                   onChange={(e) => setDoctorForm((prev) => ({ ...prev, [key]: e.target.value }))}
                 />
               </label>
             ))}
-            <div className="mt-2 flex justify-end gap-2">
+            <label className="space-y-1.5 md:col-span-2">
+              <span className="text-sm font-semibold">Bio</span>
+              <Textarea
+                value={doctorForm.bio}
+                onChange={(e) => setDoctorForm((prev) => ({ ...prev, bio: e.target.value }))}
+              />
+            </label>
+            <div className="mt-2 flex justify-end gap-2 md:col-span-2">
               <Button type="button" variant="secondary" onClick={() => setDoctorOpen(false)}>
                 Cancel
               </Button>
-              <Button disabled={savingDoctor}>{savingDoctor ? "Saving…" : "Create doctor"}</Button>
+              <Button disabled={savingDoctor}>
+                {savingDoctor ? "Saving…" : editingDoctor ? "Save changes" : "Create doctor"}
+              </Button>
             </div>
           </form>
         </Modal>
@@ -413,7 +512,11 @@ export default function DoctorsPage() {
                 <tbody>
                   {doctorPatients.map((patient) => (
                     <tr key={patient.id}>
-                      <td className="font-semibold">{patient.name}</td>
+                      <td>
+                        <Link href={`/patients/${patient.id}`} className="font-semibold hover:underline">
+                          {patient.name}
+                        </Link>
+                      </td>
                       <td>
                         <Badge tone="info">{patient.condition}</Badge>
                       </td>
@@ -487,6 +590,23 @@ export default function DoctorsPage() {
                 value={patientForm.condition}
                 onChange={(e) => setPatientForm((p) => ({ ...p, condition: e.target.value }))}
               />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-sm font-semibold">Risk flag</span>
+              <Select
+                value={patientForm.riskFlag}
+                onChange={(e) =>
+                  setPatientForm((p) => ({
+                    ...p,
+                    riskFlag: e.target.value as PatientForm["riskFlag"],
+                  }))
+                }
+              >
+                <option value="none">None</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </Select>
             </label>
             <label className="space-y-1.5">
               <span className="text-sm font-semibold">Phone</span>
