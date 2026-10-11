@@ -152,21 +152,22 @@ Calm Clinical Teal: light mint canvas, teal primary actions, pastel badges, Frau
 
 ### Desktop
 
-![Desktop login](docs/screenshots/desktop-login.png)
+Compact web captures (light | dark), resized for GitHub README fit.
 
-![Desktop dashboard](docs/screenshots/desktop-dashboard.png)
+| Login | Dashboard | Doctors |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/desktop-login.png" alt="Desktop login light" width="280" /> | <img src="docs/screenshots/desktop-dashboard.png" alt="Desktop dashboard light" width="280" /> | <img src="docs/screenshots/desktop-doctors.png" alt="Desktop doctors light" width="280" /> |
+| <img src="docs/screenshots/desktop-login-dark.png" alt="Desktop login dark" width="280" /> | <img src="docs/screenshots/desktop-dashboard-dark.png" alt="Desktop dashboard dark" width="280" /> | <img src="docs/screenshots/desktop-doctors-dark.png" alt="Desktop doctors dark" width="280" /> |
 
-![Desktop doctors](docs/screenshots/desktop-doctors.png)
+| Doctor edit | Patients | Team |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/desktop-doctor-edit.png" alt="Desktop doctor edit light" width="280" /> | <img src="docs/screenshots/desktop-patients.png" alt="Desktop patients light" width="280" /> | <img src="docs/screenshots/desktop-team-register.png" alt="Desktop team light" width="280" /> |
+| <img src="docs/screenshots/desktop-doctor-edit-dark.png" alt="Desktop doctor edit dark" width="280" /> | <img src="docs/screenshots/desktop-patients-dark.png" alt="Desktop patients dark" width="280" /> | <img src="docs/screenshots/desktop-team-register-dark.png" alt="Desktop team dark" width="280" /> |
 
-![Desktop doctor edit](docs/screenshots/desktop-doctor-edit.png)
-
-![Desktop patients](docs/screenshots/desktop-patients.png)
-
-![Desktop team register](docs/screenshots/desktop-team-register.png)
-
-![Desktop audit log](docs/screenshots/desktop-audit.png)
-
-![Desktop forgot password](docs/screenshots/desktop-forgot-password.png)
+| Audit | Forgot password |
+|:---:|:---:|
+| <img src="docs/screenshots/desktop-audit.png" alt="Desktop audit light" width="280" /> | <img src="docs/screenshots/desktop-forgot-password.png" alt="Desktop forgot password light" width="280" /> |
+| <img src="docs/screenshots/desktop-audit-dark.png" alt="Desktop audit dark" width="280" /> | <img src="docs/screenshots/desktop-forgot-password-dark.png" alt="Desktop forgot password dark" width="280" /> |
 
 ### Mobile
 
