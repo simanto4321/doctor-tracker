@@ -51,7 +51,7 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "4mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(globalLimiter);

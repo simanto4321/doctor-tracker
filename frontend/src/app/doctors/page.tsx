@@ -5,6 +5,7 @@ import { Download, Pencil, Plus, Search, Trash2, UserPlus, Users } from "lucide-
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AuthGuard } from "@/components/auth-guard";
+import { DoctorPhoto, readDoctorPhoto } from "@/components/doctor-photo";
 import { EntityHover } from "@/components/entity-hover";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -31,8 +32,11 @@ type DoctorForm = {
   phone: string;
   email: string;
   department: string;
+  title: string;
+  degrees: string;
   workingHours: string;
   bio: string;
+  photoUrl: string;
 };
 
 type PatientForm = {
@@ -53,8 +57,11 @@ const emptyDoctor: DoctorForm = {
   phone: "",
   email: "",
   department: "",
+  title: "",
+  degrees: "",
   workingHours: "Mon–Fri 09:00–17:00",
   bio: "",
+  photoUrl: "",
 };
 
 const emptyPatient: PatientForm = {
@@ -158,8 +165,11 @@ export default function DoctorsPage() {
       phone: doctor.phone,
       email: doctor.email,
       department: doctor.department || "",
+      title: doctor.title || "",
+      degrees: doctor.degrees || "",
       workingHours: doctor.workingHours || "",
       bio: doctor.bio || "",
+      photoUrl: doctor.photoUrl || "",
     });
     setWizardStep(0);
     setDoctorOpen(true);
@@ -434,6 +444,8 @@ export default function DoctorsPage() {
                           title={doctor.name}
                           badge={doctor.specialization}
                           lines={[
+                            { label: "Post", value: doctor.title || "—" },
+                            { label: "Degrees", value: doctor.degrees || "—" },
                             { label: "Hospital", value: doctor.hospital },
                             { label: "Department", value: doctor.department || "—" },
                             { label: "Hours", value: doctor.workingHours || "—" },
@@ -441,11 +453,16 @@ export default function DoctorsPage() {
                             { label: "Phone", value: doctor.phone },
                           ]}
                         >
-                          <span className="font-semibold text-[var(--accent-strong)] underline decoration-dotted">
-                            {doctor.name}
+                          <span className="flex items-center gap-3">
+                            <DoctorPhoto name={doctor.name} photoUrl={doctor.photoUrl} size="sm" />
+                            <span>
+                              <span className="block font-semibold text-[var(--accent-strong)] underline decoration-dotted">
+                                {doctor.name}
+                              </span>
+                              <span className="block text-xs text-[var(--muted)]">{doctor.email}</span>
+                            </span>
                           </span>
                         </EntityHover>
-                        <p className="text-xs text-[var(--muted)]">{doctor.email}</p>
                       </td>
                       <td>
                         <Badge tone="accent">{doctor.specialization}</Badge>
@@ -606,13 +623,66 @@ export default function DoctorsPage() {
               </>
             ) : null}
             {wizardStep === 2 ? (
-              <label className="space-y-1.5 md:col-span-2">
-                <span className="text-sm font-semibold">Bio</span>
-                <Textarea
-                  value={doctorForm.bio}
-                  onChange={(e) => setDoctorForm((prev) => ({ ...prev, bio: e.target.value }))}
-                />
-              </label>
+              <>
+                <label className="space-y-1.5">
+                  <span className="text-sm font-semibold">Post / title</span>
+                  <Input
+                    placeholder="e.g. Consultant Cardiologist"
+                    value={doctorForm.title}
+                    onChange={(e) => setDoctorForm((prev) => ({ ...prev, title: e.target.value }))}
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-sm font-semibold">Degrees</span>
+                  <Input
+                    placeholder="e.g. MD, FACC"
+                    value={doctorForm.degrees}
+                    onChange={(e) => setDoctorForm((prev) => ({ ...prev, degrees: e.target.value }))}
+                  />
+                </label>
+                <label className="space-y-1.5 md:col-span-2">
+                  <span className="text-sm font-semibold">Doctor photo</span>
+                  <div className="flex flex-wrap items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3">
+                    <DoctorPhoto name={doctorForm.name || "Doctor"} photoUrl={doctorForm.photoUrl} size="lg" />
+                    <div className="min-w-[200px] flex-1 space-y-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const dataUrl = await readDoctorPhoto(file);
+                            setDoctorForm((prev) => ({ ...prev, photoUrl: dataUrl }));
+                            toast.success("Photo added");
+                          } catch (err) {
+                            toast.error(err instanceof Error ? err.message : "Photo failed");
+                          }
+                        }}
+                      />
+                      {doctorForm.photoUrl ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setDoctorForm((prev) => ({ ...prev, photoUrl: "" }))}
+                        >
+                          Remove photo
+                        </Button>
+                      ) : (
+                        <p className="text-xs text-[var(--muted)]">JPG/PNG recommended. Stored with the doctor profile.</p>
+                      )}
+                    </div>
+                  </div>
+                </label>
+                <label className="space-y-1.5 md:col-span-2">
+                  <span className="text-sm font-semibold">Bio</span>
+                  <Textarea
+                    value={doctorForm.bio}
+                    onChange={(e) => setDoctorForm((prev) => ({ ...prev, bio: e.target.value }))}
+                  />
+                </label>
+              </>
             ) : null}
             <div className="mt-2 flex justify-between gap-2 md:col-span-2">
               <Button

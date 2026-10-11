@@ -19,8 +19,18 @@ const doctorSchema = z.object({
   phone: z.string().min(7).max(30),
   email: z.string().email(),
   department: z.string().max(120).optional(),
+  title: z.string().max(120).optional(),
+  degrees: z.string().max(240).optional(),
   workingHours: z.string().max(120).optional(),
   bio: z.string().max(800).optional(),
+  photoUrl: z
+    .string()
+    .max(1_500_000)
+    .optional()
+    .refine(
+      (v) => !v || v.startsWith("data:image/") || v.startsWith("http://") || v.startsWith("https://"),
+      "photoUrl must be an image data URL or http(s) URL"
+    ),
 });
 
 const patientUnderDoctorSchema = z.object({

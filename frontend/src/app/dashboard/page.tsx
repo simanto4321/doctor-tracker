@@ -29,9 +29,12 @@ import {
   Users,
   Waves,
 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AuthGuard } from "@/components/auth-guard";
+import { DoctorPhoto } from "@/components/doctor-photo";
+import { EntityHover } from "@/components/entity-hover";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,7 +42,7 @@ import { FeatureTitle, HoverInfo } from "@/components/ui/hover-info";
 import { Input, Select } from "@/components/ui/input";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { apiRequest, toQuery } from "@/lib/api";
-import type { DashboardPreset, DashboardStats } from "@/lib/types";
+import type { DashboardPreset, DashboardStats, Doctor } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
 
 const PIE_COLORS = ["#0f766e", "#1d4f78", "#0ea5a4", "#64748b", "#14b8a6", "#334155"];
@@ -109,6 +112,7 @@ export default function DashboardPage() {
   const [specialization, setSpecialization] = useState("");
   const [presets, setPresets] = useState<DashboardPreset[]>([]);
   const [presetName, setPresetName] = useState("");
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
 
   const loadPresets = useCallback(async () => {
     try {
@@ -118,6 +122,17 @@ export default function DashboardPage() {
       /* ignore */
     }
   }, []);
+
+  const loadDoctors = useCallback(async () => {
+    try {
+      const data = await apiRequest<{ items: Doctor[] }>(
+        `/doctors${toQuery({ hospital, specialization, limit: 24, sort: "name", dir: "asc" })}`
+      );
+      setDoctors(data.items);
+    } catch {
+      setDoctors([]);
+    }
+  }, [hospital, specialization]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -141,6 +156,10 @@ export default function DashboardPage() {
   useEffect(() => {
     loadPresets();
   }, [loadPresets]);
+
+  useEffect(() => {
+    loadDoctors();
+  }, [loadDoctors]);
 
   const heatMax = useMemo(() => {
     const cells = stats?.specializationHeatmap?.cells || [];
@@ -433,6 +452,61 @@ export default function DashboardPage() {
                 delayClass="animate-rise-delay-2"
               />
             </div>
+
+            <section className="panel animate-rise p-5">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <FeatureTitle
+                  feature="doctors"
+                  title="Doctors roster"
+                  subtitle="Photos, specialty, and profile hover — click a photo for full details."
+                />
+                <Link
+                  href="/doctors"
+                  className="text-sm font-semibold text-[var(--accent-strong)] underline-offset-4 hover:underline"
+                >
+                  Manage doctors →
+                </Link>
+              </div>
+              {doctors.length === 0 ? (
+                <p className="text-sm text-[var(--muted)]">No doctors match the current filters.</p>
+              ) : (
+                <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                  {doctors.map((doctor) => (
+                    <EntityHover
+                      key={doctor.id}
+                      href={`/doctors/${doctor.id}`}
+                      title={doctor.name}
+                      badge={doctor.specialization}
+                      className="w-full"
+                      lines={[
+                        { label: "Post", value: doctor.title || "Specialist" },
+                        { label: "Degrees", value: doctor.degrees || "—" },
+                        { label: "Specialty", value: doctor.specialization },
+                        { label: "Department", value: doctor.department || "—" },
+                        { label: "Hospital", value: doctor.hospital },
+                        { label: "Schedule", value: doctor.workingHours || "—" },
+                        { label: "Phone", value: doctor.phone },
+                        { label: "Email", value: doctor.email },
+                        { label: "Patients", value: String(doctor.patientCount ?? 0) },
+                      ]}
+                    >
+                      <div className="flex w-full flex-col items-center rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-3 py-4 text-center transition hover:border-[var(--accent)] hover:shadow-sm">
+                        <DoctorPhoto name={doctor.name} photoUrl={doctor.photoUrl} size="lg" />
+                        <p className="mt-3 line-clamp-2 text-sm font-semibold text-[var(--foreground)]">
+                          {doctor.name}
+                        </p>
+                        <p className="mt-1 line-clamp-1 text-xs font-medium text-[var(--accent-strong)]">
+                          {doctor.specialization}
+                        </p>
+                        <p className="mt-0.5 line-clamp-1 text-[11px] text-[var(--muted)]">
+                          {doctor.title || doctor.department || doctor.hospital}
+                        </p>
+                      </div>
+                    </EntityHover>
+                  ))}
+                </div>
+              )}
+            </section>
 
             <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
               <div className="panel animate-rise p-5">

@@ -22,8 +22,11 @@ export type Doctor = {
   phone: string;
   email: string;
   department?: string;
+  title?: string;
+  degrees?: string;
   workingHours?: string;
   bio?: string;
+  photoUrl?: string;
   patientCount?: number;
   deletedAt?: string | null;
   createdAt?: string;

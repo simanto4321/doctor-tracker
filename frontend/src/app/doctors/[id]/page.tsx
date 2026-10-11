@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { useEffect, useState } from "react";
 import { AuthGuard } from "@/components/auth-guard";
+import { DoctorPhoto } from "@/components/doctor-photo";
 import { EntityHover } from "@/components/entity-hover";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -74,11 +75,22 @@ export default function DoctorDetailPage() {
           <div className="space-y-6">
             <div className="panel grid gap-4 p-5 md:grid-cols-3">
               <div className="md:col-span-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone="accent">{doctor.specialization}</Badge>
-                  {doctor.department ? <Badge tone="neutral">{doctor.department}</Badge> : null}
+                <div className="flex flex-wrap items-start gap-4">
+                  <DoctorPhoto name={doctor.name} photoUrl={doctor.photoUrl} size="lg" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge tone="accent">{doctor.specialization}</Badge>
+                      {doctor.department ? <Badge tone="neutral">{doctor.department}</Badge> : null}
+                    </div>
+                    {doctor.title ? (
+                      <p className="mt-2 text-sm font-semibold text-[var(--foreground)]">{doctor.title}</p>
+                    ) : null}
+                    {doctor.degrees ? (
+                      <p className="text-sm text-[var(--muted)]">{doctor.degrees}</p>
+                    ) : null}
+                    <p className="mt-3 text-[var(--muted)]">{doctor.bio || "No bio added yet."}</p>
+                  </div>
                 </div>
-                <p className="mt-3 text-[var(--muted)]">{doctor.bio || "No bio added yet."}</p>
                 <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
                   <p>
                     <span className="text-[var(--muted)]">Hospital:</span> {doctor.hospital}

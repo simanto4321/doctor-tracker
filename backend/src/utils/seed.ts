@@ -17,66 +17,88 @@ import { Message } from "../models/Message.js";
 import { TeleSession } from "../models/TeleSession.js";
 import { Invoice } from "../models/Invoice.js";
 
+function doctorPhoto(seed: string) {
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+}
+
 const doctorsSeed = [
   {
     name: "Dr. Aisha Rahman",
     specialization: "Cardiology",
     hospital: "Harborview Medical Center",
     department: "Heart & Vascular",
+    title: "Consultant Cardiologist",
+    degrees: "MD, FACC",
     phone: "+1 206-555-0142",
     email: "aisha.rahman@harborview.health",
     workingHours: "Mon–Thu 08:00–16:00",
     bio: "Interventional cardiologist focused on preventive heart care.",
+    photoUrl: doctorPhoto("AishaRahman"),
   },
   {
     name: "Dr. Noah Keller",
     specialization: "Neurology",
     hospital: "Summit General Hospital",
     department: "Neurosciences",
+    title: "Attending Neurologist",
+    degrees: "MD, PhD",
     phone: "+1 415-555-0198",
     email: "noah.keller@summit.health",
     workingHours: "Tue–Fri 09:00–17:00",
     bio: "Neurologist specializing in migraine and seizure clinics.",
+    photoUrl: doctorPhoto("NoahKeller"),
   },
   {
     name: "Dr. Priya Mehta",
     specialization: "Pediatrics",
     hospital: "Lakeside Children's Hospital",
     department: "General Pediatrics",
+    title: "Pediatric Consultant",
+    degrees: "MBBS, DCH",
     phone: "+1 312-555-0117",
     email: "priya.mehta@lakeside.health",
     workingHours: "Mon–Fri 08:30–15:30",
     bio: "Pediatrician with a focus on asthma and wellness visits.",
+    photoUrl: doctorPhoto("PriyaMehta"),
   },
   {
     name: "Dr. Marcus Chen",
     specialization: "Orthopedics",
     hospital: "Summit General Hospital",
     department: "Sports Medicine",
+    title: "Orthopedic Surgeon",
+    degrees: "MD, FAAOS",
     phone: "+1 415-555-0164",
     email: "marcus.chen@summit.health",
     workingHours: "Mon–Wed 10:00–18:00",
     bio: "Orthopedic surgeon for fracture recovery and sports injuries.",
+    photoUrl: doctorPhoto("MarcusChen"),
   },
   {
     name: "Dr. Elena Vasquez",
     specialization: "Dermatology",
     hospital: "Coastal Clinic Network",
     department: "Skin Health",
+    title: "Dermatologist",
+    degrees: "MD, FAAD",
     phone: "+1 858-555-0133",
     email: "elena.vasquez@coastal.health",
     workingHours: "Wed–Sat 09:00–14:00",
     bio: "Dermatologist treating eczema, acne, and chronic skin conditions.",
+    photoUrl: doctorPhoto("ElenaVasquez"),
   },
   {
     name: "Dr. Jamal Okonkwo",
     specialization: "Internal Medicine",
     hospital: "Harborview Medical Center",
     department: "Primary Care",
+    title: "Internist",
+    degrees: "MD, FACP",
     phone: "+1 206-555-0175",
     email: "jamal.okonkwo@harborview.health",
     workingHours: "Mon–Fri 09:00–17:00",
     bio: "Internist managing diabetes, hypertension, and complex care.",
+    photoUrl: doctorPhoto("JamalOkonkwo"),
   },
 ];
 
@@ -175,6 +197,7 @@ export async function seedDatabase() {
   const doctorCount = await Doctor.countDocuments();
   if (doctorCount > 0) {
     console.log("[seed] Data already present — skipping sample clinical data");
+    await backfillDoctorProfiles();
     await seedSmartAddons(email);
     return {
       adminEmail: email,
@@ -418,6 +441,29 @@ export async function seedDatabase() {
     adminPassword: password,
     seededFresh: true,
   };
+}
+
+async function backfillDoctorProfiles() {
+  const existing = await Doctor.find({ deletedAt: null }).lean();
+  let updated = 0;
+  for (const doctor of existing) {
+    const seed = doctorsSeed.find((d) => d.email === doctor.email);
+    const patch: Record<string, string> = {};
+    if (!doctor.photoUrl) {
+      patch.photoUrl = seed?.photoUrl || doctorPhoto(doctor.name);
+    }
+    if (!doctor.title) {
+      patch.title = seed?.title || `${doctor.specialization} Specialist`;
+    }
+    if (!doctor.degrees) {
+      patch.degrees = seed?.degrees || "MD";
+    }
+    if (Object.keys(patch).length) {
+      await Doctor.updateOne({ _id: doctor._id }, { $set: patch });
+      updated += 1;
+    }
+  }
+  if (updated) console.log(`[seed] Backfilled photo/title/degrees on ${updated} doctors`);
 }
 
 async function seedSmartAddons(

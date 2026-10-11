@@ -18,13 +18,15 @@ export function EntityHover({ href, title, lines, badge, className, children }: 
   const [open, setOpen] = useState(false);
   const content = (
     <span
-      className={cn("relative inline-flex", className)}
+      className={cn("relative inline-flex w-full", !href && className)}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)}
+      onBlur={() => setOpen(false)}
     >
       {children}
       {open ? (
-        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xl text-[var(--foreground)]">
+        <div className="absolute left-1/2 top-full z-50 mt-2 w-72 -translate-x-1/2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xl text-[var(--foreground)]">
           <div className="flex items-start justify-between gap-2">
             <p className="font-semibold text-[var(--foreground)]">{title}</p>
             {badge ? (
@@ -37,7 +39,9 @@ export function EntityHover({ href, title, lines, badge, className, children }: 
             {lines.map((line) => (
               <div key={line.label} className="flex justify-between gap-3 text-xs">
                 <span className="text-[var(--muted)]">{line.label}</span>
-                <span className="font-medium text-[var(--foreground)]">{line.value}</span>
+                <span className="max-w-[58%] text-right font-medium text-[var(--foreground)]">
+                  {line.value}
+                </span>
               </div>
             ))}
           </div>
@@ -51,7 +55,7 @@ export function EntityHover({ href, title, lines, badge, className, children }: 
 
   if (href) {
     return (
-      <Link href={href} className="inline-flex">
+      <Link href={href} className={cn("inline-flex w-full", className)}>
         {content}
       </Link>
     );
