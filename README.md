@@ -66,6 +66,7 @@ Set accounts in `backend/.env` (see `.env.example`):
 | `RECEPTIONIST_EMAIL` / `RECEPTIONIST_PASSWORD` / `RECEPTIONIST_NAME` | Seeded receptionist |
 | `SHOW_DEMO_ACCOUNTS` / `SHOW_DEMO_PASSWORDS` | Login “Demo logins” panel via `GET /api/auth/demo-accounts` |
 | `CLIENT_ORIGIN` | Comma-separated CORS origins |
+| `CLINIC_TIMEZONE` | IANA zone for date-only filters (e.g. `Asia/Dhaka`, `UTC`) |
 | `NEXT_PUBLIC_API_URL` | Frontend API base |
 | `NEXT_PUBLIC_DEFAULT_LOGIN_EMAIL` (optional) | Prefill login email locally only |
 

@@ -21,6 +21,7 @@ import { FeatureTitle } from "@/components/ui/hover-info";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { apiRequest } from "@/lib/api";
 import type { Appointment, Doctor, Patient, Visit } from "@/lib/types";
+import { formatDateTime } from "@/lib/datetime";
 import { formatDate } from "@/lib/utils";
 
 type DoctorDetail = Doctor & {
@@ -198,7 +199,7 @@ export default function DoctorDetailPage() {
                         }
                         badge={item.status}
                         lines={[
-                          { label: "When", value: new Date(item.startsAt).toLocaleString() },
+                          { label: "When", value: formatDateTime(item.startsAt) },
                           { label: "Reason", value: item.reason || "Visit" },
                           { label: "Status", value: item.status },
                         ]}
@@ -208,7 +209,7 @@ export default function DoctorDetailPage() {
                             {typeof item.patient === "object" ? item.patient?.name : "Patient"}
                           </p>
                           <p className="text-[var(--muted)]">
-                            {new Date(item.startsAt).toLocaleString()} · {item.status}
+                            {formatDateTime(item.startsAt)} · {item.status}
                           </p>
                         </div>
                       </EntityHover>

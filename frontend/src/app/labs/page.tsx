@@ -22,6 +22,7 @@ import { Input, Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { apiRequest, toQuery } from "@/lib/api";
+import { toLocalDateInput } from "@/lib/datetime";
 import { formatDate } from "@/lib/utils";
 
 type Lab = {
@@ -54,7 +55,7 @@ export default function LabsPage() {
     unit: "mg/dL",
     refLow: "70",
     refHigh: "110",
-    collectedAt: new Date().toISOString().slice(0, 10),
+    collectedAt: toLocalDateInput(new Date()),
   });
 
   const load = useCallback(async () => {

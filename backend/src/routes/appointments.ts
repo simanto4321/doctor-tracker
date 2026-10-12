@@ -8,6 +8,7 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { parsePagination } from "../utils/parseQuery.js";
 import { writeAudit } from "../utils/audit.js";
 import { bustCachePrefix } from "../utils/cache.js";
+import { boundForDateInput, formatInClinic } from "../utils/datetime.js";
 import { dispatchWebhook } from "../utils/webhooks.js";
 
 const appointmentSchema = z.object({
@@ -30,12 +31,16 @@ appointmentsRouter.get("/", async (req, res) => {
   if (typeof req.query.patient === "string" && req.query.patient) filter.patient = req.query.patient;
   if (typeof req.query.status === "string" && req.query.status) filter.status = req.query.status;
   if (typeof req.query.from === "string" && req.query.from) {
-    filter.startsAt = { ...(filter.startsAt as object), $gte: new Date(req.query.from) };
+    filter.startsAt = {
+      ...(filter.startsAt as object),
+      $gte: boundForDateInput(req.query.from, "start"),
+    };
   }
   if (typeof req.query.to === "string" && req.query.to) {
-    const to = new Date(req.query.to);
-    to.setHours(23, 59, 59, 999);
-    filter.startsAt = { ...(filter.startsAt as object), $lte: to };
+    filter.startsAt = {
+      ...(filter.startsAt as object),
+      $lte: boundForDateInput(req.query.to, "end"),
+    };
   }
 
   const [items, total] = await Promise.all([
@@ -88,7 +93,13 @@ appointmentsRouter.post("/", requireRole("admin", "receptionist"), async (req, r
   await writeAudit(req.auth, "create", "appointment", appointment._id.toString());
   await Notification.create({
     title: "Appointment scheduled",
-    body: `${patient.name} with ${doctor.name} on ${startsAt.toLocaleString()}`,
+    body: `${patient.name} with ${doctor.name} on ${formatInClinic(startsAt, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`,
     type: "appointment",
     href: "/appointments",
   });

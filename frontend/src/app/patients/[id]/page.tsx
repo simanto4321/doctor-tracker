@@ -34,6 +34,7 @@ import type {
   Visit,
   Vital,
 } from "@/lib/types";
+import { formatDateTime } from "@/lib/datetime";
 import { formatDate } from "@/lib/utils";
 
 type PatientDetail = Patient & {
@@ -479,7 +480,7 @@ export default function PatientDetailPage() {
                   ))}
                   {(patient.appointments || []).slice(0, 3).map((item) => (
                     <div key={item.id} className="rounded-xl border border-[var(--border)] px-3 py-2 text-sm">
-                      <p className="font-semibold">{new Date(item.startsAt).toLocaleString()}</p>
+                      <p className="font-semibold">{formatDateTime(item.startsAt)}</p>
                       <p className="text-[var(--muted)]">{item.status}</p>
                     </div>
                   ))}

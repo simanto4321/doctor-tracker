@@ -11,7 +11,7 @@ import { Input, Select, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { apiRequest, toQuery } from "@/lib/api";
-import { formatDate } from "@/lib/utils";
+import { formatDateTime, toLocalDateTimeInput } from "@/lib/datetime";
 
 type Session = {
   id: string;
@@ -74,7 +74,7 @@ export default function TelemedicinePage() {
         ...f,
         patient: p.items[0]?.id || "",
         doctor: d.items[0]?.id || "",
-        scheduledAt: soon.toISOString().slice(0, 16),
+        scheduledAt: toLocalDateTimeInput(soon),
       }));
     })().catch(() => undefined);
   }, []);
@@ -156,7 +156,7 @@ export default function TelemedicinePage() {
                   </div>
                   <Badge tone={tone(session.status)}>{session.status}</Badge>
                 </div>
-                <p className="text-sm">{formatDate(session.scheduledAt)}</p>
+                <p className="text-sm">{formatDateTime(session.scheduledAt)}</p>
                 {session.reason ? (
                   <p className="text-sm text-[var(--muted)]">{session.reason}</p>
                 ) : null}

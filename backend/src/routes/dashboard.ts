@@ -7,31 +7,54 @@ import { Visit } from "../models/Visit.js";
 import { FilterPreset } from "../models/FilterPreset.js";
 import { requireAuth } from "../middleware/auth.js";
 import { cachedJson } from "../utils/cache.js";
+import { config } from "../config.js";
+import { boundForDateInput, formatInClinic } from "../utils/datetime.js";
 import { escapeRegex } from "../utils/parseQuery.js";
+
+function clinicTz() {
+  return process.env.CLINIC_TIMEZONE || config.clinicTimeZone || "UTC";
+}
+
+function clinicDayKey(date: Date) {
+  // en-CA yields YYYY-MM-DD
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: clinicTz(),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
 
 export const dashboardRouter = Router();
 dashboardRouter.use(requireAuth);
 
 function parseRange(query: Record<string, unknown>) {
   const now = new Date();
-  const fromParam = typeof query.from === "string" ? new Date(query.from) : null;
-  const toParam = typeof query.to === "string" ? new Date(query.to) : null;
+  const fromRaw = typeof query.from === "string" ? query.from : "";
+  const toRaw = typeof query.to === "string" ? query.to : "";
 
-  const rangeStart =
-    fromParam && !Number.isNaN(fromParam.getTime())
-      ? fromParam
-      : new Date(new Date(now).setDate(now.getDate() - 29));
-  rangeStart.setHours(0, 0, 0, 0);
+  let rangeStart = fromRaw
+    ? boundForDateInput(fromRaw, "start")
+    : boundForDateInput(
+        new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+        "start"
+      );
+  let rangeEnd = toRaw ? boundForDateInput(toRaw, "end") : now;
 
-  const rangeEnd = toParam && !Number.isNaN(toParam.getTime()) ? toParam : now;
-  rangeEnd.setHours(23, 59, 59, 999);
+  if (Number.isNaN(rangeStart.getTime())) {
+    rangeStart = boundForDateInput(
+      new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+      "start"
+    );
+  }
+  if (Number.isNaN(rangeEnd.getTime())) {
+    rangeEnd = now;
+  }
 
   if (rangeEnd < rangeStart) {
-    const swap = new Date(rangeStart);
-    rangeStart.setTime(rangeEnd.getTime());
-    rangeStart.setHours(0, 0, 0, 0);
-    rangeEnd.setTime(swap.getTime());
-    rangeEnd.setHours(23, 59, 59, 999);
+    const swapStart = rangeStart;
+    rangeStart = boundForDateInput(toRaw || rangeEnd.toISOString().slice(0, 10), "start");
+    rangeEnd = boundForDateInput(fromRaw || swapStart.toISOString().slice(0, 10), "end");
   }
 
   const dayMs = 24 * 60 * 60 * 1000;
@@ -164,7 +187,13 @@ dashboardRouter.get("/stats", async (req, res) => {
       { $match: rangePatientFilter },
       {
         $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$createdAt",
+              timezone: clinicTz(),
+            },
+          },
           count: { $sum: 1 },
         },
       },
@@ -242,7 +271,13 @@ dashboardRouter.get("/stats", async (req, res) => {
       {
         $group: {
           _id: {
-            day: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            day: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$createdAt",
+                timezone: clinicTz(),
+              },
+            },
             doctorId: "$doctor",
             doctorName: "$doctorInfo.name",
           },
@@ -255,13 +290,12 @@ dashboardRouter.get("/stats", async (req, res) => {
 
   const dayMap = new Map(dailyPatients.map((d) => [d._id, d.count]));
   const patientTrend = Array.from({ length: dayCount }, (_, index) => {
-    const date = new Date(rangeStart);
-    date.setDate(rangeStart.getDate() + index);
+    const date = new Date(rangeStart.getTime() + index * 24 * 60 * 60 * 1000);
     if (date > rangeEnd) return null;
-    const key = date.toISOString().slice(0, 10);
+    const key = clinicDayKey(date);
     return {
       date: key,
-      label: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      label: formatInClinic(date, { month: "short", day: "numeric" }),
       patients: dayMap.get(key) || 0,
     };
   }).filter(Boolean);
@@ -314,13 +348,12 @@ dashboardRouter.get("/stats", async (req, res) => {
       name: doctorTotals.get(id)?.name || "Doctor",
     })),
     series: Array.from({ length: dayCount }, (_, index) => {
-      const date = new Date(rangeStart);
-      date.setDate(rangeStart.getDate() + index);
+      const date = new Date(rangeStart.getTime() + index * 24 * 60 * 60 * 1000);
       if (date > rangeEnd) return null;
-      const key = date.toISOString().slice(0, 10);
+      const key = clinicDayKey(date);
       const point: Record<string, string | number> = {
         date: key,
-        label: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        label: formatInClinic(date, { month: "short", day: "numeric" }),
       };
       topDoctorIds.forEach((id) => {
         const short = doctorTotals.get(id)?.name.replace(/^Dr\.\s*/, "").split(" ")[0] || id.slice(-4);
@@ -347,8 +380,8 @@ dashboardRouter.get("/stats", async (req, res) => {
       patientsInRange: dailyPatients.reduce((sum, d) => sum + d.count, 0),
     },
     range: {
-      from: rangeStart.toISOString().slice(0, 10),
-      to: rangeEnd.toISOString().slice(0, 10),
+      from: clinicDayKey(rangeStart),
+      to: clinicDayKey(rangeEnd),
     },
     appliedFilters: { hospital, specialization },
     filtersMeta: {

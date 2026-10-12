@@ -68,6 +68,8 @@ export const config = {
     password: env("RECEPTIONIST_PASSWORD", "Desk@123"),
   },
   emailFrom: env("EMAIL_FROM", "Doctor Tracker <noreply@doctortracker.local>"),
+  /** IANA timezone for date-only filters (dashboard, appointments day). Examples: UTC, Asia/Dhaka, America/New_York */
+  clinicTimeZone: env("CLINIC_TIMEZONE", "UTC"),
   redisUrl: env("REDIS_URL"),
   dashboardCacheTtl: Number(env("DASHBOARD_CACHE_TTL", "30")),
   rateLimitMax: Number(env("RATE_LIMIT_MAX", "400")),

@@ -13,6 +13,7 @@ import { Input, Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { apiRequest, toQuery } from "@/lib/api";
+import { toLocalDateInput } from "@/lib/datetime";
 import type { Pagination, Prescription } from "@/lib/types";
 
 export default function PrescriptionsPage() {
@@ -28,7 +29,7 @@ export default function PrescriptionsPage() {
     medication: "",
     dosage: "",
     frequency: "Once daily",
-    startDate: new Date().toISOString().slice(0, 10),
+    startDate: toLocalDateInput(new Date()),
     status: "active",
   });
 

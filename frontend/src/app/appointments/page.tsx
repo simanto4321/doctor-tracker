@@ -15,22 +15,22 @@ import { Modal } from "@/components/ui/modal";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { apiRequest, toQuery } from "@/lib/api";
 import type { Appointment, Pagination } from "@/lib/types";
-
-function toDateInput(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function toLocalInput(iso: string) {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+import {
+  formatDate,
+  formatTime,
+  formatTimeRange,
+  localDayBoundsIso,
+  parseLocalDateOnly,
+  shiftLocalDate,
+  toLocalDateInput,
+  toLocalDateTimeInput,
+} from "@/lib/datetime";
 
 export default function AppointmentsPage() {
   const [items, setItems] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"day" | "list">("day");
-  const [day, setDay] = useState(toDateInput(new Date()));
+  const [day, setDay] = useState(toLocalDateInput(new Date()));
   const [status, setStatus] = useState("");
   const [open, setOpen] = useState(false);
   const [reschedule, setReschedule] = useState<Appointment | null>(null);
@@ -53,10 +53,12 @@ export default function AppointmentsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      // Send local-day ISO bounds so server timezone cannot shift the clinic day.
+      const bounds = localDayBoundsIso(day);
       const query =
         view === "day"
-          ? { from: day, to: day, status: status || undefined, limit: 100 }
-          : { from: day, status: status || undefined, limit: 50 };
+          ? { from: bounds.from, to: bounds.to, status: status || undefined, limit: 100 }
+          : { from: bounds.from, status: status || undefined, limit: 50 };
       const data = await apiRequest<{ items: Appointment[]; pagination: Pagination }>(
         `/appointments${toQuery(query)}`
       );
@@ -110,16 +112,19 @@ export default function AppointmentsPage() {
   const byDay = useMemo(() => {
     const map = new Map<string, Appointment[]>();
     items.forEach((item) => {
-      const key = new Date(item.startsAt).toLocaleDateString();
+      const key = formatDate(item.startsAt, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
       map.set(key, [...(map.get(key) || []), item]);
     });
     return Array.from(map.entries());
   }, [items]);
 
   function shiftDay(delta: number) {
-    const d = new Date(`${day}T12:00:00`);
-    d.setDate(d.getDate() + delta);
-    setDay(toDateInput(d));
+    setDay(shiftLocalDate(day, delta));
   }
 
   async function onCreate(event: FormEvent) {
@@ -148,8 +153,8 @@ export default function AppointmentsPage() {
   function openReschedule(item: Appointment) {
     setReschedule(item);
     setRescheduleForm({
-      startsAt: toLocalInput(item.startsAt),
-      endsAt: toLocalInput(item.endsAt),
+      startsAt: toLocalDateTimeInput(new Date(item.startsAt)),
+      endsAt: toLocalDateTimeInput(new Date(item.endsAt)),
       status: item.status,
       reason: item.reason || "",
     });
@@ -194,7 +199,7 @@ export default function AppointmentsPage() {
     return (
       <div
         key={item.id}
-        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-white px-3 py-3"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-3"
       >
         <EntityHover
           title={`${patientName} · ${doctorName}`}
@@ -202,13 +207,7 @@ export default function AppointmentsPage() {
           lines={[
             {
               label: "Time",
-              value: `${new Date(item.startsAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })} – ${new Date(item.endsAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}`,
+              value: formatTimeRange(item.startsAt, item.endsAt),
             },
             { label: "Reason", value: item.reason || "Visit" },
             { label: "Condition", value: condition },
@@ -220,11 +219,7 @@ export default function AppointmentsPage() {
               {patientName} · {doctorName}
             </p>
             <p className="text-sm text-[var(--muted)]">
-              {new Date(item.startsAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}{" "}
-              — {item.reason || "Visit"}
+              {formatTime(item.startsAt)} — {item.reason || "Visit"}
             </p>
           </div>
         </EntityHover>
@@ -252,7 +247,20 @@ export default function AppointmentsPage() {
         title="Appointments"
         subtitle="Book, reschedule, and review the clinic day calendar."
         action={
-          <Button onClick={() => setOpen(true)}>
+          <Button
+            onClick={() => {
+              const start = new Date();
+              start.setMinutes(0, 0, 0);
+              start.setHours(start.getHours() + 1);
+              const end = new Date(start.getTime() + 30 * 60 * 1000);
+              setForm((f) => ({
+                ...f,
+                startsAt: toLocalDateTimeInput(start),
+                endsAt: toLocalDateTimeInput(end),
+              }));
+              setOpen(true);
+            }}
+          >
             <Plus className="h-4 w-4" />
             Book appointment
           </Button>
@@ -303,7 +311,7 @@ export default function AppointmentsPage() {
             </Button>
           </div>
           <div className="flex items-end">
-            <Button type="button" variant="secondary" onClick={() => setDay(toDateInput(new Date()))}>
+            <Button type="button" variant="secondary" onClick={() => setDay(toLocalDateInput(new Date()))}>
               Today
             </Button>
           </div>
@@ -326,7 +334,7 @@ export default function AppointmentsPage() {
           <div className="panel p-5">
             <FeatureTitle
               feature="appointments"
-              title={new Date(`${day}T12:00:00`).toLocaleDateString(undefined, {
+              title={formatDate(parseLocalDateOnly(day, 12), {
                 weekday: "long",
                 month: "long",
                 day: "numeric",
