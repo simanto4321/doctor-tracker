@@ -216,7 +216,9 @@ export function AppShell({
         <div>
           <div className="flex items-center gap-1.5">
             <p className="font-display text-xl leading-none text-[var(--foreground)]">{t("app.name")}</p>
-            <HoverInfo feature="dashboard" label={t("app.name")} side="right" />
+            <span className="hidden lg:inline-flex">
+              <HoverInfo feature="dashboard" label={t("app.name")} side="right" />
+            </span>
           </div>
           <p className="mt-1 text-xs text-[var(--muted)]">{t("app.tagline")}</p>
         </div>
@@ -243,7 +245,9 @@ export function AppShell({
                 <Icon className="h-4 w-4 shrink-0" aria-hidden />
                 <span className="truncate">{label}</span>
               </Link>
-              <HoverInfo feature={item.feature} label={label} side="right" />
+              <span className="hidden lg:inline-flex">
+                <HoverInfo feature={item.feature} label={label} side="right" />
+              </span>
             </div>
           );
         })}
@@ -326,6 +330,7 @@ export function AppShell({
                 <Button
                   variant="secondary"
                   size="icon"
+                  className="touch-target"
                   onClick={toggleTheme}
                   aria-label={t("action.theme")}
                   title={`${t("theme.light")} / ${t("theme.dark")}`}
@@ -356,7 +361,7 @@ export function AppShell({
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="sm:hidden"
+                    className="touch-target sm:hidden"
                     onClick={() => window.dispatchEvent(new Event("doctor-tracker:open-search"))}
                     aria-label={t("action.search")}
                   >
@@ -381,6 +386,7 @@ export function AppShell({
                   <Button
                     variant="secondary"
                     size="icon"
+                    className="touch-target"
                     onClick={() => setBellOpen((v) => !v)}
                     aria-label={
                       unread > 0

@@ -23,6 +23,11 @@ type HoverInfoProps = {
   children?: React.ReactNode;
 };
 
+function preferHover() {
+  if (typeof window === "undefined") return true;
+  return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
+
 export function HoverInfo({
   feature,
   label,
@@ -38,10 +43,37 @@ export function HoverInfo({
   const [loading, setLoading] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [canHover, setCanHover] = useState(true);
 
   useEffect(() => {
     setMounted(true);
+    setCanHover(preferHover());
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const onChange = () => setCanHover(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    const onPointer = (e: PointerEvent) => {
+      if (!anchorRef.current) return;
+      const tip = document.getElementById(tipId);
+      const target = e.target as Node;
+      if (anchorRef.current.contains(target)) return;
+      if (tip?.contains(target)) return;
+      setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("pointerdown", onPointer);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerdown", onPointer);
+    };
+  }, [open, tipId]);
 
   useEffect(() => {
     if (!open || insight) return;
@@ -76,19 +108,20 @@ export function HoverInfo({
     }
     const rect = anchorRef.current.getBoundingClientRect();
     const gap = 8;
+    const tipW = Math.min(288, window.innerWidth - 16);
     let top = rect.bottom + gap;
-    let left = rect.left + rect.width / 2 - 144;
+    let left = rect.left + rect.width / 2 - tipW / 2;
     if (side === "top") {
-      top = rect.top - gap;
-      left = rect.left + rect.width / 2 - 144;
+      top = rect.top - gap - 8;
+      left = rect.left + rect.width / 2 - tipW / 2;
     } else if (side === "left") {
       top = rect.top + rect.height / 2 - 40;
-      left = rect.left - 288 - gap;
+      left = rect.left - tipW - gap;
     } else if (side === "right") {
       top = rect.top + rect.height / 2 - 40;
       left = rect.right + gap;
     }
-    const maxLeft = window.innerWidth - 300;
+    const maxLeft = window.innerWidth - tipW - 8;
     const maxTop = window.innerHeight - 16;
     setCoords({
       top: Math.max(8, Math.min(top, maxTop)),
@@ -102,7 +135,7 @@ export function HoverInfo({
           <div
             id={tipId}
             role="tooltip"
-            className="pointer-events-none fixed z-[80] w-72 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 text-left shadow-xl text-[var(--foreground)]"
+            className="pointer-events-none fixed z-[80] w-[min(18rem,calc(100vw-1rem))] rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 text-left shadow-xl text-[var(--foreground)]"
             style={{ top: coords.top, left: coords.left }}
           >
             <p className="font-display text-base text-[var(--foreground)]">
@@ -128,7 +161,7 @@ export function HoverInfo({
                 ))}
               </div>
             ) : null}
-            {insight?.updatedAt ? (
+            {insight?.updatedAt && !loading ? (
               <p className="mt-2 text-[10px] text-[var(--muted)]">
                 Updated {new Date(insight.updatedAt).toLocaleTimeString()}
               </p>
@@ -142,17 +175,31 @@ export function HoverInfo({
     <span
       ref={anchorRef}
       className={cn("relative inline-flex items-center", className)}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocus={() => setOpen(true)}
-      onBlur={() => setOpen(false)}
+      onMouseEnter={() => {
+        if (canHover) setOpen(true);
+      }}
+      onMouseLeave={() => {
+        if (canHover) setOpen(false);
+      }}
+      onFocus={() => {
+        if (canHover) setOpen(true);
+      }}
+      onBlur={() => {
+        if (canHover) setOpen(false);
+      }}
     >
       {children || (
         <button
           type="button"
-          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent-strong)]"
+          className="touch-target inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent-strong)] sm:h-7 sm:w-7 sm:min-h-7 sm:min-w-7"
           aria-describedby={open ? tipId : undefined}
+          aria-expanded={open}
           aria-label={`About ${label || feature}`}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen((v) => !v);
+          }}
         >
           <Info className="h-3.5 w-3.5" />
         </button>
