@@ -483,7 +483,7 @@ export default function DashboardPage() {
                   type="button"
                   size="icon"
                   variant="ghost"
-                  className="h-8 w-8"
+                  className="touch-target h-10 w-10 sm:h-8 sm:w-8 sm:min-h-8 sm:min-w-8"
                   onClick={() => deletePreset(preset.id)}
                   aria-label={`Delete ${preset.name}`}
                 >
