@@ -279,17 +279,21 @@ async function auditMobile(browser) {
     "Messages",
     "Billing",
     "Documents",
-    "Audit",
+    "Audit log",
     "Team",
+    "Import",
+    "Trash",
   ];
   for (const name of secondary) {
     await openMore(page);
     await page.waitForTimeout(250);
-    const link = page.getByRole("link", { name: new RegExp(`^${name}$`, "i") }).first();
-    if (await link.isVisible().catch(() => false)) {
-      await link.click();
+    // Drawer list scrolls — bring link into view inside the dialog nav
+    const link = page.locator('[role="dialog"] a').filter({ hasText: new RegExp(`^${name}$`, "i") }).first();
+    if (await link.count()) {
+      await link.scrollIntoViewIfNeeded().catch(() => {});
+      await link.click({ force: true });
       await page.waitForTimeout(900);
-      await shot(page, `m-sec-${name.toLowerCase()}`);
+      await shot(page, `m-sec-${name.toLowerCase().replace(/\s+/g, "-")}`);
       await measureOverflow(page, `mobile/${name.toLowerCase()}`);
       await pageHealthy(page, `mobile/${name.toLowerCase()}`);
     } else {
@@ -341,20 +345,20 @@ async function auditMobile(browser) {
   await measureOverflow(page, "mobile/360");
   await checkTouchTargets(page, "mobile/360");
 
-  // pull content scroll under bottom nav
+  // content padding under bottom nav (check shell column, not only main)
   const obscured = await page.evaluate(() => {
     const nav = [...document.querySelectorAll("nav")].find((n) => {
       const r = n.getBoundingClientRect();
-      return r.bottom >= window.innerHeight - 8;
+      const label = n.getAttribute("aria-label") || "";
+      return /mobile|bottom/i.test(label) && r.bottom >= window.innerHeight - 8;
     });
     if (!nav) return null;
-    const nr = nav.getBoundingClientRect();
-    const main = document.querySelector("main") || document.body;
-    const style = getComputedStyle(main);
-    return { navH: Math.round(nr.height), pb: style.paddingBottom };
+    const shell = document.querySelector("main")?.parentElement;
+    const pb = shell ? getComputedStyle(shell).paddingBottom : "0px";
+    return { navH: Math.round(nav.getBoundingClientRect().height), pb };
   });
-  if (obscured && (!obscured.pb || parseInt(obscured.pb, 10) < 48)) {
-    find("medium", "mobile/shell", `Main may sit under bottom nav (paddingBottom=${obscured.pb})`);
+  if (obscured && parseInt(obscured.pb, 10) < 64) {
+    find("medium", "mobile/shell", `Shell padding under bottom nav looks tight (paddingBottom=${obscured.pb})`);
   }
 
   if (consoleErrors.length) {
