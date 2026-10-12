@@ -19,7 +19,7 @@ export function SortableTh({ label, column, sort, dir, onSort, className }: Sort
       <button
         type="button"
         className={cn(
-          "inline-flex items-center gap-1.5 rounded-lg px-1 py-0.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--muted)] transition hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
+          "touch-target inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide text-[var(--muted)] transition hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] sm:min-h-0 sm:px-1 sm:py-0.5",
           active && "text-[var(--accent-strong)]",
           className
         )}

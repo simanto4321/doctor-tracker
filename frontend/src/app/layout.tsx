@@ -76,8 +76,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             richColors
             position="top-center"
             closeButton
-            offset={{ top: "max(0.75rem, env(safe-area-inset-top))" }}
-            mobileOffset={{ top: "max(0.75rem, env(safe-area-inset-top))" }}
+            offset={16}
+            mobileOffset={12}
             toastOptions={{
               classNames: {
                 toast: "!items-start",

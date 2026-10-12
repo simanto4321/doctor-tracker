@@ -206,7 +206,7 @@ export function AppShell({
   const sidebar = (
     <aside
       id="mobile-nav"
-      className="flex h-full w-72 flex-col border-r border-[var(--border)] bg-[var(--sidebar)] px-4 py-5"
+      className="flex h-full w-72 flex-col border-r border-[var(--border)] bg-[var(--sidebar)] px-4 py-5 safe-pb"
       aria-label="Primary"
     >
       <div className="mb-6 flex items-center gap-3 px-2">
@@ -275,7 +275,7 @@ export function AppShell({
         <div className="hidden lg:block">{sidebar}</div>
 
         {open ? (
-          <div className="fixed inset-0 z-40 lg:hidden" role="presentation">
+          <div className="fixed inset-0 z-[60] lg:hidden" role="presentation">
             <button
               className="absolute inset-0 bg-slate-950/40"
               onClick={() => setOpen(false)}
@@ -293,7 +293,7 @@ export function AppShell({
           </div>
         ) : null}
 
-        <div className="flex min-w-0 flex-1 flex-col pb-20 lg:pb-0">
+        <div className="flex min-w-0 flex-1 flex-col pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
           <header className="sticky-header border-b border-[var(--border)] bg-[var(--background)]/90 px-3 py-3 backdrop-blur safe-px sm:px-4 sm:py-4 md:px-8">
             <div className="flex flex-col gap-3">
               <div className="flex min-w-0 items-start gap-2 sm:gap-3">
@@ -462,17 +462,20 @@ export function AppShell({
           </header>
           <main
             id="main-content"
-            className="safe-px flex-1 px-4 py-6 md:px-8 md:py-8"
+            className="safe-px flex-1 px-4 py-6 pb-8 md:px-8 md:py-8"
             tabIndex={-1}
             aria-label={t("a11y.main")}
           >
             {children}
           </main>
 
-          {/* Mobile bottom navigation */}
+          {/* Mobile bottom navigation — hidden while drawer is open so Sign out stays reachable */}
           <nav
             aria-label={t("a11y.bottomNav")}
-            className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--border)] bg-[var(--surface)] backdrop-blur safe-pb lg:hidden"
+            className={cn(
+              "fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border)] bg-[var(--surface)] backdrop-blur safe-pb lg:hidden",
+              open && "pointer-events-none invisible"
+            )}
           >
             <ul className="mx-auto grid max-w-lg grid-cols-5 gap-1 px-2 py-1.5">
               {mobilePrimary.map((item) => {
