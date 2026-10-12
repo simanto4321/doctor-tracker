@@ -150,7 +150,7 @@ export function HoverInfo({
       {children || (
         <button
           type="button"
-          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] bg-white text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent-strong)]"
+          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent-strong)]"
           aria-describedby={open ? tipId : undefined}
           aria-label={`About ${label || feature}`}
         >

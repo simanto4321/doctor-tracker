@@ -47,18 +47,28 @@ import { cn, formatDate } from "@/lib/utils";
 const PIE_COLORS = ["#0f766e", "#1d4f78", "#0ea5a4", "#64748b", "#14b8a6", "#334155"];
 const LINE_COLORS = ["#0f766e", "#1d4f78", "#c2410c", "#7c3aed", "#0369a1"];
 
+/** Local calendar YYYY-MM-DD (avoid UTC drift from toISOString). */
 function toInputDate(d: Date) {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function shiftDays(days: number) {
   const d = new Date();
+  d.setHours(12, 0, 0, 0);
   d.setDate(d.getDate() + days);
   return toInputDate(d);
 }
 
 function yearStart() {
-  return `${new Date().getFullYear()}-01-01`;
+  const d = new Date();
+  return `${d.getFullYear()}-01-01`;
+}
+
+function isCompleteDate(value: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
 function StatCard({
@@ -101,8 +111,11 @@ function heatColor(value: number, max: number) {
 
 export default function DashboardPage() {
   const boardRef = useRef<HTMLDivElement>(null);
+  const statsReqId = useRef(0);
+  const doctorsReqId = useRef(0);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [from, setFrom] = useState(shiftDays(-29));
@@ -112,6 +125,7 @@ export default function DashboardPage() {
   const [presets, setPresets] = useState<DashboardPreset[]>([]);
   const [presetName, setPresetName] = useState("");
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [activeRange, setActiveRange] = useState<"7d" | "30d" | "90d" | "ytd" | null>("30d");
 
   const loadPresets = useCallback(async () => {
     try {
@@ -122,43 +136,61 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const loadDoctors = useCallback(async () => {
-    try {
-      const data = await apiRequest<{ items: Doctor[] }>(
-        `/doctors${toQuery({ hospital, specialization, limit: 24, sort: "name", dir: "asc" })}`
-      );
-      setDoctors(data.items);
-    } catch {
-      setDoctors([]);
-    }
-  }, [hospital, specialization]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await apiRequest<DashboardStats>(
-        `/dashboard/stats${toQuery({ from, to, hospital, specialization })}`
-      );
-      setStats(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load dashboard");
-    } finally {
-      setLoading(false);
-    }
-  }, [from, to, hospital, specialization]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
   useEffect(() => {
     loadPresets();
   }, [loadPresets]);
 
+  // Debounced stats fetch; ignore stale responses; avoid full-page skeleton on filter tweaks.
   useEffect(() => {
-    loadDoctors();
-  }, [loadDoctors]);
+    if (!isCompleteDate(from) || !isCompleteDate(to)) return;
+    const reqId = ++statsReqId.current;
+    const timer = window.setTimeout(async () => {
+      const initial = !stats;
+      if (initial) setLoading(true);
+      else setRefreshing(true);
+      setError("");
+      try {
+        const data = await apiRequest<DashboardStats>(
+          `/dashboard/stats${toQuery({ from, to, hospital, specialization })}`
+        );
+        if (reqId !== statsReqId.current) return;
+        setStats(data);
+      } catch (err) {
+        if (reqId !== statsReqId.current) return;
+        setError(err instanceof Error ? err.message : "Failed to load dashboard");
+      } finally {
+        if (reqId === statsReqId.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }
+    }, 400);
+    return () => {
+      window.clearTimeout(timer);
+      statsReqId.current += 1;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stats intentionally omitted to avoid loop
+  }, [from, to, hospital, specialization]);
+
+  useEffect(() => {
+    const reqId = ++doctorsReqId.current;
+    const timer = window.setTimeout(async () => {
+      try {
+        const data = await apiRequest<{ items: Doctor[] }>(
+          `/doctors${toQuery({ hospital, specialization, limit: 24, sort: "name", dir: "asc" })}`
+        );
+        if (reqId !== doctorsReqId.current) return;
+        setDoctors(data.items);
+      } catch {
+        if (reqId !== doctorsReqId.current) return;
+        setDoctors([]);
+      }
+    }, 400);
+    return () => {
+      window.clearTimeout(timer);
+      doctorsReqId.current += 1;
+    };
+  }, [hospital, specialization]);
 
   const heatMax = useMemo(() => {
     const cells = stats?.specializationHeatmap?.cells || [];
@@ -172,6 +204,7 @@ export default function DashboardPage() {
   }, [stats]);
 
   function applyQuickRange(kind: "7d" | "30d" | "90d" | "ytd") {
+    setActiveRange(kind);
     setTo(toInputDate(new Date()));
     if (kind === "7d") setFrom(shiftDays(-6));
     if (kind === "30d") setFrom(shiftDays(-29));
@@ -308,7 +341,13 @@ export default function DashboardPage() {
                   ["ytd", "YTD"],
                 ] as const
               ).map(([key, label]) => (
-                <Button key={key} size="sm" variant="secondary" onClick={() => applyQuickRange(key)}>
+                <Button
+                  key={key}
+                  size="sm"
+                  variant={activeRange === key ? "primary" : "secondary"}
+                  aria-pressed={activeRange === key}
+                  onClick={() => applyQuickRange(key)}
+                >
                   <CalendarRange className="h-3.5 w-3.5" />
                   {label}
                 </Button>
@@ -321,13 +360,27 @@ export default function DashboardPage() {
               <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 From
               </span>
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+              <Input
+                type="date"
+                value={from}
+                onChange={(e) => {
+                  setActiveRange(null);
+                  setFrom(e.target.value);
+                }}
+              />
             </label>
             <label className="space-y-1.5">
               <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 To
               </span>
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+              <Input
+                type="date"
+                value={to}
+                onChange={(e) => {
+                  setActiveRange(null);
+                  setTo(e.target.value);
+                }}
+              />
             </label>
             <label className="space-y-1.5">
               <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
@@ -376,7 +429,7 @@ export default function DashboardPage() {
             {presets.map((preset) => (
               <div
                 key={preset.id}
-                className="flex items-center gap-1 rounded-xl border border-[var(--border)] bg-white px-2 py-1"
+                className="flex items-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-2 py-1"
               >
                 <button
                   type="button"
@@ -400,17 +453,28 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {loading ? (
+        {loading && !stats ? (
           <PageSkeleton />
-        ) : error ? (
+        ) : error && !stats ? (
           <div className="rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-soft)] p-5 text-[var(--danger)]">
             {error}
           </div>
         ) : stats ? (
-          <div ref={boardRef} className="space-y-6 bg-[var(--background)]">
+          <div
+            ref={boardRef}
+            className={cn(
+              "space-y-6 bg-[var(--background)] transition-opacity",
+              refreshing && "opacity-70"
+            )}
+          >
             <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
+              {refreshing ? (
+                <span className="text-xs font-semibold text-[var(--accent-strong)]" role="status">
+                  Updating…
+                </span>
+              ) : null}
               <Badge tone="accent">
-                {stats.range?.from} → {stats.range?.to}
+                {formatDate(stats.range?.from || from)} → {formatDate(stats.range?.to || to)}
               </Badge>
               {stats.appliedFilters?.hospital ? (
                 <Badge tone="neutral">{stats.appliedFilters.hospital}</Badge>

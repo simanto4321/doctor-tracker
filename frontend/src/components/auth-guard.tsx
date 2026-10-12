@@ -22,7 +22,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (!ready || !token) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--background)] text-[var(--muted)]">
+      <div
+        className="flex min-h-screen items-center justify-center bg-[var(--background)] text-[var(--muted)]"
+        role="status"
+        aria-live="polite"
+      >
         Checking session…
       </div>
     );

@@ -30,7 +30,7 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "@/components/command-palette";
@@ -41,6 +41,13 @@ import { useI18n, type Locale } from "@/lib/i18n";
 import { useThemeStore } from "@/lib/theme-store";
 import type { NotificationItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+function modKeyHint() {
+  if (typeof navigator === "undefined") return "Ctrl+K";
+  return /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)
+    ? "⌘K"
+    : "Ctrl+K";
+}
 
 const nav = [
   { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, feature: "dashboard" },
@@ -85,12 +92,68 @@ export function AppShell({
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
   const [bellOpen, setBellOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const bellRef = useRef<HTMLDivElement>(null);
+  const [shortcutHint, setShortcutHint] = useState("Ctrl+K");
 
   async function logout() {
     await apiLogout();
     toast.success(t("toast.signedOut"));
     router.replace("/login");
   }
+
+  useEffect(() => {
+    setShortcutHint(modKeyHint());
+  }, []);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      if (bellOpen) setBellOpen(false);
+      if (open) {
+        setOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    }
+    function onPointerDown(event: MouseEvent) {
+      if (!bellOpen || !bellRef.current) return;
+      if (!bellRef.current.contains(event.target as Node)) setBellOpen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("mousedown", onPointerDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("mousedown", onPointerDown);
+    };
+  }, [bellOpen, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const root = drawerRef.current;
+    const focusable = root?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), select, textarea, input, [tabindex]:not([tabindex="-1"])'
+    );
+    focusable?.[0]?.focus();
+    function onTab(event: KeyboardEvent) {
+      if (event.key !== "Tab" || !focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", onTab);
+    return () => {
+      document.removeEventListener("keydown", onTab);
+      previouslyFocused?.focus?.();
+    };
+  }, [open]);
 
   useEffect(() => {
     let active = true;
@@ -115,6 +178,7 @@ export function AppShell({
 
   const sidebar = (
     <aside
+      id="mobile-nav"
       className="flex h-full w-72 flex-col border-r border-[var(--border)] bg-[var(--sidebar)] px-4 py-5"
       aria-label="Primary"
     >
@@ -180,41 +244,57 @@ export function AppShell({
         <div className="hidden lg:block">{sidebar}</div>
 
         {open ? (
-          <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="fixed inset-0 z-40 lg:hidden" role="presentation">
             <button
               className="absolute inset-0 bg-slate-950/40"
               onClick={() => setOpen(false)}
-              aria-label="Close menu"
+              aria-label={t("action.closeMenu") !== "action.closeMenu" ? t("action.closeMenu") : "Close menu"}
             />
-            <div className="relative z-10 h-full w-[min(100%,20rem)] shadow-2xl">{sidebar}</div>
+            <div
+              ref={drawerRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigation"
+              className="relative z-10 h-full w-[min(100%,20rem)] shadow-2xl"
+            >
+              {sidebar}
+            </div>
           </div>
         ) : null}
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--background)]/90 px-3 py-3 backdrop-blur sm:px-4 sm:py-4 md:px-8">
-            <div className="flex items-start justify-between gap-2 sm:gap-4">
-              <div className="flex min-w-0 flex-1 items-start gap-2 sm:gap-3">
+            <div className="flex flex-col gap-3">
+              <div className="flex min-w-0 items-start gap-2 sm:gap-3">
                 <Button
+                  ref={menuButtonRef}
                   variant="secondary"
                   size="icon"
                   className="shrink-0 lg:hidden"
                   onClick={() => setOpen(true)}
                   aria-label="Open menu"
                   aria-expanded={open}
+                  aria-controls="mobile-nav"
                 >
                   {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
                 </Button>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h1 className="font-display truncate text-xl sm:text-2xl md:text-3xl">{title}</h1>
-                    {feature ? <HoverInfo feature={feature} label={title} /> : null}
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <h1 className="font-display min-w-0 truncate text-xl sm:text-2xl md:text-3xl">
+                      {title}
+                    </h1>
+                    {feature ? (
+                      <span className="hidden shrink-0 sm:inline-flex">
+                        <HoverInfo feature={feature} label={title} />
+                      </span>
+                    ) : null}
                   </div>
                   {subtitle ? (
                     <p className="mt-1 line-clamp-2 text-xs text-[var(--muted)] sm:text-sm">{subtitle}</p>
                   ) : null}
                 </div>
               </div>
-              <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:justify-end sm:gap-2">
                 <Button
                   variant="secondary"
                   size="icon"
@@ -228,18 +308,18 @@ export function AppShell({
                     <Moon className="h-4 w-4" aria-hidden />
                   )}
                 </Button>
-                <label className="inline-flex items-center gap-1">
+                <label className="inline-flex min-w-0 items-center gap-1">
                   <span className="sr-only">{t("action.language")}</span>
-                  <Languages className="hidden h-4 w-4 text-[var(--muted)] sm:block" aria-hidden />
+                  <Languages className="hidden h-4 w-4 shrink-0 text-[var(--muted)] sm:block" aria-hidden />
                   <select
-                    className="h-10 max-w-[5.5rem] rounded-xl border border-[var(--border)] bg-[var(--surface)] px-1.5 text-xs font-semibold text-[var(--foreground)] sm:max-w-[9.5rem] sm:px-2 sm:text-sm"
+                    className="h-10 w-[4.75rem] rounded-xl border border-[var(--border)] bg-[var(--surface)] px-1.5 text-xs font-semibold text-[var(--foreground)] sm:w-auto sm:max-w-[9.5rem] sm:px-2 sm:text-sm"
                     value={locale}
                     onChange={(e) => setLocale(e.target.value as Locale)}
                     aria-label={t("action.language")}
                   >
                     {locales.map((item) => (
                       <option key={item.code} value={item.code}>
-                        {item.nativeLabel}
+                        {item.code.toUpperCase()}
                       </option>
                     ))}
                   </select>
@@ -247,37 +327,53 @@ export function AppShell({
                 <HoverInfo feature="search" label={t("action.search")} side="bottom">
                   <Button
                     variant="secondary"
+                    size="icon"
+                    className="sm:hidden"
+                    onClick={() => window.dispatchEvent(new Event("doctor-tracker:open-search"))}
+                    aria-label={t("action.search")}
+                  >
+                    <Search className="h-4 w-4" aria-hidden />
+                  </Button>
+                </HoverInfo>
+                <HoverInfo feature="search" label={t("action.search")} side="bottom">
+                  <Button
+                    variant="secondary"
                     size="sm"
+                    className="hidden sm:inline-flex"
                     onClick={() => window.dispatchEvent(new Event("doctor-tracker:open-search"))}
                   >
                     <Search className="h-4 w-4" aria-hidden />
-                    <span className="hidden sm:inline">{t("action.search")}</span>
+                    <span>{t("action.search")}</span>
                     <kbd className="hidden rounded border border-[var(--border)] px-1.5 text-[10px] md:inline">
-                      ⌘K
+                      {shortcutHint}
                     </kbd>
                   </Button>
                 </HoverInfo>
-                <div className="relative">
-                  <HoverInfo feature="notifications" label="Notifications" side="bottom">
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      onClick={() => setBellOpen((v) => !v)}
-                      aria-label="Notifications"
-                      aria-expanded={bellOpen}
-                    >
-                      <Bell className="h-4 w-4" aria-hidden />
-                      {unread > 0 ? (
-                        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--danger)] px-1 text-[10px] text-white">
-                          {unread}
-                        </span>
-                      ) : null}
-                    </Button>
-                  </HoverInfo>
+                <div className="relative" ref={bellRef}>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    onClick={() => setBellOpen((v) => !v)}
+                    aria-label={
+                      unread > 0 ? `Notifications, ${unread} unread` : "Notifications"
+                    }
+                    aria-expanded={bellOpen}
+                    aria-haspopup="dialog"
+                  >
+                    <Bell className="h-4 w-4" aria-hidden />
+                    {unread > 0 ? (
+                      <span
+                        className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--danger)] px-1 text-[10px] text-white"
+                        aria-hidden
+                      >
+                        {unread}
+                      </span>
+                    ) : null}
+                  </Button>
                   {bellOpen ? (
                     <div
-                      className="absolute right-0 mt-2 w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-xl"
-                      role="menu"
+                      className="absolute right-0 z-30 mt-2 w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-xl"
+                      role="dialog"
                       aria-label="Notifications"
                     >
                       <div className="mb-2 flex items-center justify-between px-2">
@@ -302,6 +398,7 @@ export function AppShell({
                           notifications.map((item) => (
                             <button
                               key={item.id}
+                              type="button"
                               className={cn(
                                 "w-full rounded-xl px-3 py-2 text-left hover:bg-[var(--surface-soft)]",
                                 !item.read && "bg-[var(--accent-soft)]/50"
@@ -323,7 +420,7 @@ export function AppShell({
                     </div>
                   ) : null}
                 </div>
-                {action}
+                {action ? <div className="flex min-w-0 flex-wrap items-center gap-1.5">{action}</div> : null}
               </div>
             </div>
           </header>
