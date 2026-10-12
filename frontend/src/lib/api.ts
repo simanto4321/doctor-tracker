@@ -1,9 +1,10 @@
 "use client";
 
+import { appConfig } from "./app-config";
 import { useAuthStore } from "./auth-store";
 import type { User } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4821/api";
+const API_BASE = appConfig.apiUrl;
 
 export class ApiError extends Error {
   status: number;

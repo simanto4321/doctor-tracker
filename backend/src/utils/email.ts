@@ -22,7 +22,8 @@ async function getTransporter() {
 }
 
 export async function sendEmail(input: SendEmailInput) {
-  const from = process.env.EMAIL_FROM || "Doctor Tracker <noreply@doctortracker.local>";
+  const { config } = await import("../config.js");
+  const from = config.emailFrom;
   const transport = await getTransporter();
 
   if (transport) {

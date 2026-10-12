@@ -16,6 +16,7 @@ import { Bed } from "../models/Bed.js";
 import { Message } from "../models/Message.js";
 import { TeleSession } from "../models/TeleSession.js";
 import { Invoice } from "../models/Invoice.js";
+import { config } from "../config.js";
 
 function doctorPhoto(seed: string) {
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
@@ -158,13 +159,14 @@ function hoursFromNow(hours: number) {
 }
 
 export async function seedDatabase() {
-  const email = process.env.ADMIN_EMAIL || "admin@doctortracker.com";
-  const password = process.env.ADMIN_PASSWORD || "Admin@123";
+  const { admin, receptionist } = config;
+  const email = admin.email;
+  const password = admin.password;
 
   const existingAdmin = await User.findOne({ email });
   if (!existingAdmin) {
     await User.create({
-      name: "Clinic Admin",
+      name: admin.name,
       email,
       passwordHash: await bcrypt.hash(password, 10),
       role: "admin",
@@ -177,13 +179,13 @@ export async function seedDatabase() {
     await existingAdmin.save();
   }
 
-  const receptionistEmail = "front.desk@doctortracker.com";
+  const receptionistEmail = receptionist.email;
   const existingDesk = await User.findOne({ email: receptionistEmail });
   if (!existingDesk) {
     await User.create({
-      name: "Front Desk",
+      name: receptionist.name,
       email: receptionistEmail,
-      passwordHash: await bcrypt.hash("Desk@123", 10),
+      passwordHash: await bcrypt.hash(receptionist.password, 10),
       role: "receptionist",
       emailVerified: true,
       digestEnabled: true,

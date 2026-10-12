@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("admin@doctortracker.com");
+  const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
   const [issuedToken, setIssuedToken] = useState("");

@@ -16,6 +16,7 @@ import {
   setAuthCookies,
   signAccessToken,
 } from "../utils/tokens.js";
+import { config, demoAccounts } from "../config.js";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -29,10 +30,19 @@ const registerSchema = z.object({
   role: z.enum(["receptionist", "doctor"]).default("receptionist"),
 });
 
-const LOCK_MS = Number(process.env.LOGIN_LOCK_MS || 15 * 60 * 1000);
-const MAX_ATTEMPTS = Number(process.env.LOGIN_MAX_ATTEMPTS || 5);
+const LOCK_MS = config.loginLockMs;
+const MAX_ATTEMPTS = config.loginMaxAttempts;
 
 export const authRouter = Router();
+
+/** Public demo accounts for the login UI — driven entirely by env/config. */
+authRouter.get("/demo-accounts", (_req, res) => {
+  return res.json({
+    enabled: config.showDemoAccounts,
+    appName: config.appName,
+    accounts: demoAccounts(),
+  });
+});
 
 function publicUser(user: {
   _id: { toString(): string };
@@ -192,7 +202,7 @@ authRouter.post("/register", requireAuth, requireRole("admin"), authLimiter, asy
     emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
   });
 
-  const verifyUrl = `${process.env.CLIENT_ORIGIN || "http://127.0.0.1:4317"}/verify-email?token=${verifyToken}`;
+  const verifyUrl = `${config.clientOrigins[0]}/verify-email?token=${verifyToken}`;
   const mail = await sendEmail({
     to: user.email,
     subject: "Verify your Doctor Tracker email",

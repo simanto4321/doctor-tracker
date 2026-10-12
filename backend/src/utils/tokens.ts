@@ -2,20 +2,24 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import type { Response } from "express";
 import type { AuthPayload } from "../middleware/auth.js";
+import { config } from "../config.js";
 import { RefreshToken } from "../models/RefreshToken.js";
 
 const ACCESS_COOKIE = "dt_access";
 const REFRESH_COOKIE = "dt_refresh";
 
 export function getJwtSecret() {
-  const secret = process.env.JWT_SECRET;
+  const secret = config.jwtSecret;
+  if (!secret || secret === "change-me-to-a-long-random-string") {
+    if (config.isProd) throw new Error("JWT_SECRET must be set in production");
+  }
   if (!secret) throw new Error("JWT secret is not configured");
   return secret;
 }
 
 export function signAccessToken(payload: AuthPayload) {
   return jwt.sign(payload, getJwtSecret(), {
-    expiresIn: (process.env.ACCESS_TOKEN_TTL || "15m") as jwt.SignOptions["expiresIn"],
+    expiresIn: config.accessTokenTtl as jwt.SignOptions["expiresIn"],
   });
 }
 
@@ -33,7 +37,7 @@ export async function issueRefreshToken(params: {
   ip?: string;
 }) {
   const raw = createRefreshTokenValue();
-  const days = Number(process.env.REFRESH_TOKEN_DAYS || 14);
+  const days = config.refreshTokenDays;
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   await RefreshToken.create({
     user: params.userId,
@@ -69,7 +73,7 @@ export async function revokeRefreshToken(raw: string) {
 }
 
 function cookieOptions(maxAgeMs: number) {
-  const secure = process.env.COOKIE_SECURE === "true" || process.env.VERCEL === "1";
+  const secure = config.cookieSecure;
   return {
     httpOnly: true,
     secure,
@@ -95,7 +99,7 @@ export function setAuthCookies(
 }
 
 export function clearAuthCookies(res: Response) {
-  const secure = process.env.COOKIE_SECURE === "true" || process.env.VERCEL === "1";
+  const secure = config.cookieSecure;
   const base = {
     path: "/",
     secure,

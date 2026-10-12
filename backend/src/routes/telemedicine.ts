@@ -12,7 +12,7 @@ export const telemedicineRouter = Router();
 telemedicineRouter.use(requireAuth);
 
 function demoJoinUrl(id: string) {
-  const base = process.env.TELE_JOIN_BASE || "https://meet.doctortracker.local/session";
+  const base = process.env.TELE_JOIN_BASE || "https://meet.example.local/session";
   return `${base}/${id}?token=${crypto.randomBytes(8).toString("hex")}`;
 }
 

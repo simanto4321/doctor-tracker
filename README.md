@@ -56,12 +56,20 @@ npm run test          # Vitest unit tests (backend)
 npm run test:e2e --prefix frontend   # Playwright (API + UI must be running)
 ```
 
-### Demo credentials
+### Demo credentials (env-driven — not hardcoded in UI)
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@doctortracker.com` | `Admin@123` |
-| Receptionist | `front.desk@doctortracker.com` | `Desk@123` |
+Set accounts in `backend/.env` (see `.env.example`):
+
+| Variable | Purpose |
+|----------|---------|
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | Seeded admin |
+| `RECEPTIONIST_EMAIL` / `RECEPTIONIST_PASSWORD` / `RECEPTIONIST_NAME` | Seeded receptionist |
+| `SHOW_DEMO_ACCOUNTS` / `SHOW_DEMO_PASSWORDS` | Login “Demo logins” panel via `GET /api/auth/demo-accounts` |
+| `CLIENT_ORIGIN` | Comma-separated CORS origins |
+| `NEXT_PUBLIC_API_URL` | Frontend API base |
+| `NEXT_PUBLIC_DEFAULT_LOGIN_EMAIL` (optional) | Prefill login email locally only |
+
+Defaults ship for local demos; change any value and restart — the login UI loads accounts from the API.
 
 Admin-only: **Team** registration + **Audit log**.  
 Receptionist: create/edit doctors & patients.  
@@ -219,9 +227,9 @@ Compact phone frames (light | dark). Images are resized for GitHub README fit.
 - **Live backend API:** https://doctor-tracker-api.vercel.app/api
 - **API health:** https://doctor-tracker-api.vercel.app/api/health
 - **Swagger docs:** https://doctor-tracker-api.vercel.app/api/docs
-- **Demo credentials** (if required for review):
+- **Demo credentials** (defaults from env; override via `ADMIN_*` / `RECEPTIONIST_*`; also listed live at `/api/auth/demo-accounts`):
 
-| Role | Email | Password |
+| Role | Email (default) | Password (default) |
 |------|-------|----------|
 | Admin | `admin@doctortracker.com` | `Admin@123` |
 | Receptionist | `front.desk@doctortracker.com` | `Desk@123` |

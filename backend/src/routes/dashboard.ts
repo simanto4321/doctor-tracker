@@ -49,7 +49,8 @@ dashboardRouter.get("/stats", async (req, res) => {
     typeof req.query.specialization === "string" ? req.query.specialization.trim() : "";
 
   const cacheKey = `dashboard:stats:${rangeStart.toISOString().slice(0, 10)}:${rangeEnd.toISOString().slice(0, 10)}:${hospital}:${specialization}`;
-  const ttl = Number(process.env.DASHBOARD_CACHE_TTL || 30);
+  const { config } = await import("../config.js");
+  const ttl = config.dashboardCacheTtl;
 
   const payload = await cachedJson(cacheKey, ttl, async () => {
   const doctorFilter: Record<string, unknown> = { deletedAt: null };

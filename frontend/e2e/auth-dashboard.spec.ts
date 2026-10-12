@@ -2,6 +2,18 @@ import { expect, test } from "@playwright/test";
 
 const API = process.env.PLAYWRIGHT_API_URL || "http://127.0.0.1:4821/api";
 
+async function demoAdmin(request: import("@playwright/test").APIRequestContext) {
+  const demo = await request.get(`${API}/auth/demo-accounts`);
+  expect(demo.ok()).toBeTruthy();
+  const body = await demo.json();
+  const admin = (body.accounts || []).find((a: { role: string }) => a.role === "admin");
+  const email = process.env.E2E_ADMIN_EMAIL || admin?.email;
+  const password = process.env.E2E_ADMIN_PASSWORD || admin?.password;
+  expect(email).toBeTruthy();
+  expect(password).toBeTruthy();
+  return { email: email as string, password: password as string };
+}
+
 test.describe("Doctor Tracker platform smoke", () => {
   test("health + openapi docs respond", async ({ request }) => {
     const health = await request.get(`${API.replace(/\/api$/, "")}/api/health`);
@@ -15,13 +27,14 @@ test.describe("Doctor Tracker platform smoke", () => {
   });
 
   test("login sets session and opens dashboard", async ({ page, request }) => {
+    const creds = await demoAdmin(request);
     const login = await request.post(`${API}/auth/login`, {
-      data: { email: "admin@doctortracker.com", password: "Admin@123" },
+      data: { email: creds.email, password: creds.password },
     });
     expect(login.ok()).toBeTruthy();
     const body = await login.json();
     expect(body.token).toBeTruthy();
-    expect(body.user.email).toBe("admin@doctortracker.com");
+    expect(body.user.email).toBe(creds.email);
 
     await page.addInitScript((session) => {
       localStorage.setItem(
@@ -43,8 +56,9 @@ test.describe("Doctor Tracker platform smoke", () => {
     const denied = await request.get(`${API}/fhir/Bundle/$export`);
     expect(denied.status()).toBe(401);
 
+    const creds = await demoAdmin(request);
     const login = await request.post(`${API}/auth/login`, {
-      data: { email: "admin@doctortracker.com", password: "Admin@123" },
+      data: { email: creds.email, password: creds.password },
     });
     const { token } = await login.json();
     const exportRes = await request.get(`${API}/fhir/Bundle/$export`, {

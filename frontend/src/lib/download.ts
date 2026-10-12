@@ -1,9 +1,9 @@
+import { appConfig } from "./app-config";
 import { useAuthStore } from "./auth-store";
 
 export async function downloadCsv(path: string, filename: string) {
   const token = useAuthStore.getState().token;
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4821/api";
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetch(`${appConfig.apiUrl}${path}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!response.ok) {

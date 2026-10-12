@@ -37,7 +37,8 @@ export async function sendActivityDigests() {
 
   // Always include admin demo recipient if no verified users
   if (results.length === 0) {
-    const adminEmail = process.env.ADMIN_EMAIL || "admin@doctortracker.com";
+    const { config } = await import("../config.js");
+    const adminEmail = config.admin.email;
     const sent = await sendEmail({
       to: adminEmail,
       subject,

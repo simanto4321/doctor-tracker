@@ -1,12 +1,14 @@
+import { config } from "./config.js";
+
 export const openApiSpec = {
   openapi: "3.0.3",
   info: {
-    title: "Doctor Tracker API",
+    title: `${config.appName} API`,
     version: "1.0.0",
     description:
       "Clinical operations API with cookie/JWT auth, rate limits, webhooks, FHIR-lite export, and dashboard analytics.",
   },
-  servers: [{ url: "http://127.0.0.1:4821", description: "Local" }],
+  servers: [{ url: config.publicApiUrl, description: config.isProd ? "Deployed" : "Local" }],
   components: {
     securitySchemes: {
       bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },

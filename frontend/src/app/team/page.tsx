@@ -1,12 +1,13 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AuthGuard } from "@/components/auth-guard";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { apiRequest } from "@/lib/api";
+import type { DemoAccount, DemoAccountsResponse } from "@/lib/app-config";
 import { useAuthStore } from "@/lib/auth-store";
 
 export default function TeamPage() {
@@ -18,6 +19,16 @@ export default function TeamPage() {
     role: "receptionist",
   });
   const [saving, setSaving] = useState(false);
+  const [demoHint, setDemoHint] = useState<DemoAccount | null>(null);
+
+  useEffect(() => {
+    apiRequest<DemoAccountsResponse>("/auth/demo-accounts", { auth: false })
+      .then((data) => {
+        const desk = data.accounts?.find((a) => a.role === "receptionist");
+        setDemoHint(desk || null);
+      })
+      .catch(() => setDemoHint(null));
+  }, []);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -87,9 +98,12 @@ export default function TeamPage() {
               </Select>
             </label>
             <Button disabled={saving}>{saving ? "Creating…" : "Register user"}</Button>
-            <p className="text-xs text-[var(--muted)]">
-              Demo receptionist already seeded: front.desk@doctortracker.com / Desk@123
-            </p>
+            {demoHint ? (
+              <p className="text-xs text-[var(--muted)]">
+                Seeded demo receptionist (from server config): {demoHint.email}
+                {demoHint.password ? ` / ${demoHint.password}` : ""}
+              </p>
+            ) : null}
           </form>
         )}
       </AppShell>

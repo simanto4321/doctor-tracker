@@ -30,20 +30,7 @@ import { messagesRouter } from "./routes/messages.js";
 import { telemedicineRouter } from "./routes/telemedicine.js";
 import { bedsRouter } from "./routes/beds.js";
 import { invoicesRouter } from "./routes/invoices.js";
-
-function allowedOrigins() {
-  const fromEnv = (process.env.CLIENT_ORIGIN || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return [
-    ...fromEnv,
-    "http://localhost:4317",
-    "http://127.0.0.1:4317",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-  ];
-}
+import { allAllowedOrigins, config } from "./config.js";
 
 export function createApp() {
   const app = express();
@@ -57,11 +44,12 @@ export function createApp() {
     })
   );
 
-  const origins = allowedOrigins();
+  const origins = allAllowedOrigins();
   app.use(
     cors({
       origin(origin, callback) {
-        if (!origin || origins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+        const vercelOk = config.allowVercelPreviewCors && Boolean(origin?.endsWith(".vercel.app"));
+        if (!origin || origins.includes(origin) || vercelOk) {
           callback(null, true);
           return;
         }

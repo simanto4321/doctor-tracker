@@ -1,11 +1,12 @@
 import "dotenv/config";
 import { createApp } from "./app.js";
+import { config } from "./config.js";
 import { connectDatabase } from "./config/db.js";
 import { initCache } from "./utils/cache.js";
 import { seedDatabase } from "./utils/seed.js";
 
 const app = createApp();
-const port = Number(process.env.PORT) || 4821;
+const port = config.port;
 
 let ready: Promise<void> | null = null;
 
@@ -14,7 +15,7 @@ export async function ensureReady() {
     ready = (async () => {
       await connectDatabase();
       await initCache();
-      if (process.env.SEED_ON_START !== "false") {
+      if (config.seedOnStart) {
         const seed = await seedDatabase();
         console.log(`[seed] Admin login → ${seed.adminEmail} / ${seed.adminPassword}`);
       }
@@ -28,7 +29,7 @@ export default app;
 async function start() {
   await ensureReady();
   app.listen(port, "0.0.0.0", () => {
-    console.log(`[api] Doctor Tracker API listening on http://127.0.0.1:${port}`);
+    console.log(`[api] ${config.appName} API listening on http://127.0.0.1:${port}`);
     console.log(`[api] Swagger docs → http://127.0.0.1:${port}/api/docs`);
   });
 }
