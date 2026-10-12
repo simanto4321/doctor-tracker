@@ -42,6 +42,8 @@ import { Input, Select } from "@/components/ui/input";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { apiRequest, toQuery } from "@/lib/api";
 import type { DashboardPreset, DashboardStats, Doctor } from "@/lib/types";
+import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import { LiveRegion } from "@/components/ui/live-region";
 import { cn, formatDate } from "@/lib/utils";
 
 const PIE_COLORS = ["#0f766e", "#1d4f78", "#0ea5a4", "#64748b", "#14b8a6", "#334155"];
@@ -126,6 +128,33 @@ export default function DashboardPage() {
   const [presetName, setPresetName] = useState("");
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [activeRange, setActiveRange] = useState<"7d" | "30d" | "90d" | "ytd" | null>("30d");
+
+  const reloadDashboard = useCallback(async () => {
+    if (!isCompleteDate(from) || !isCompleteDate(to)) return;
+    const reqId = ++statsReqId.current;
+    setRefreshing(true);
+    setError("");
+    try {
+      const [statsData, doctorData] = await Promise.all([
+        apiRequest<DashboardStats>(
+          `/dashboard/stats${toQuery({ from, to, hospital, specialization })}`
+        ),
+        apiRequest<{ items: Doctor[] }>(
+          `/doctors${toQuery({ hospital, specialization, limit: 24, sort: "name", dir: "asc" })}`
+        ),
+      ]);
+      if (reqId !== statsReqId.current) return;
+      setStats(statsData);
+      setDoctors(doctorData.items);
+    } catch (err) {
+      if (reqId !== statsReqId.current) return;
+      setError(err instanceof Error ? err.message : "Failed to load dashboard");
+    } finally {
+      if (reqId === statsReqId.current) setRefreshing(false);
+    }
+  }, [from, to, hospital, specialization]);
+
+  const pull = usePullToRefresh(reloadDashboard, true);
 
   const loadPresets = useCallback(async () => {
     try {
@@ -325,6 +354,18 @@ export default function DashboardPage() {
           </div>
         }
       >
+        {(pull.progress > 0.05 || pull.refreshing) && (
+          <LiveRegion busy={pull.refreshing}>
+            <div className="mb-3 flex justify-center text-xs font-semibold text-[var(--accent-strong)]">
+              {pull.refreshing
+                ? "Refreshing…"
+                : pull.progress >= 1
+                  ? "Release to refresh"
+                  : "Pull to refresh"}
+            </div>
+          </LiveRegion>
+        )}
+
         <div className="panel mb-5 space-y-4 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <FeatureTitle

@@ -33,6 +33,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { CommandPalette } from "@/components/command-palette";
 import { HoverInfo } from "@/components/ui/hover-info";
 import { useAuthStore } from "@/lib/auth-store";
@@ -175,6 +176,32 @@ export function AppShell({
   }, [pathname]);
 
   const visibleNav = nav.filter((item) => !item.adminOnly || user?.role === "admin");
+  const mobilePrimary = visibleNav.filter((item) =>
+    ["/dashboard", "/doctors", "/patients", "/appointments"].includes(item.href)
+  );
+  const crumbs = (() => {
+    const parts = pathname.split("/").filter(Boolean);
+    if (!parts.length) return [{ label: t("shell.breadcrumbHome"), href: "/dashboard" as string | undefined }];
+    const items: Array<{ label: string; href?: string }> = [
+      { label: t("shell.breadcrumbHome"), href: "/dashboard" },
+    ];
+    let acc = "";
+    for (let i = 0; i < parts.length; i++) {
+      const segment = parts[i] || "";
+      acc += `/${segment}`;
+      const navHit = nav.find((n) => n.href === acc);
+      const label = navHit?.labelKey
+        ? t(navHit.labelKey)
+        : i === parts.length - 1
+          ? title
+          : segment.replace(/-/g, " ");
+      items.push({
+        label,
+        href: i === parts.length - 1 ? undefined : acc,
+      });
+    }
+    return items;
+  })();
 
   const sidebar = (
     <aside
@@ -248,13 +275,13 @@ export function AppShell({
             <button
               className="absolute inset-0 bg-slate-950/40"
               onClick={() => setOpen(false)}
-              aria-label={t("action.closeMenu") !== "action.closeMenu" ? t("action.closeMenu") : "Close menu"}
+              aria-label={t("action.closeMenu")}
             />
             <div
               ref={drawerRef}
               role="dialog"
               aria-modal="true"
-              aria-label="Navigation"
+              aria-label={t("shell.navDialog")}
               className="relative z-10 h-full w-[min(100%,20rem)] shadow-2xl"
             >
               {sidebar}
@@ -262,23 +289,24 @@ export function AppShell({
           </div>
         ) : null}
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--background)]/90 px-3 py-3 backdrop-blur sm:px-4 sm:py-4 md:px-8">
+        <div className="flex min-w-0 flex-1 flex-col pb-20 lg:pb-0">
+          <header className="sticky-header border-b border-[var(--border)] bg-[var(--background)]/90 px-3 py-3 backdrop-blur safe-px sm:px-4 sm:py-4 md:px-8">
             <div className="flex flex-col gap-3">
               <div className="flex min-w-0 items-start gap-2 sm:gap-3">
                 <Button
                   ref={menuButtonRef}
                   variant="secondary"
                   size="icon"
-                  className="shrink-0 lg:hidden"
+                  className="shrink-0 touch-target lg:hidden"
                   onClick={() => setOpen(true)}
-                  aria-label="Open menu"
+                  aria-label={t("action.openMenu")}
                   aria-expanded={open}
                   aria-controls="mobile-nav"
                 >
                   {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
                 </Button>
                 <div className="min-w-0 flex-1">
+                  <Breadcrumbs items={crumbs} className="mb-1 hidden sm:block" />
                   <div className="flex min-w-0 items-center gap-2">
                     <h1 className="font-display min-w-0 truncate text-xl sm:text-2xl md:text-3xl">
                       {title}
@@ -355,7 +383,9 @@ export function AppShell({
                     size="icon"
                     onClick={() => setBellOpen((v) => !v)}
                     aria-label={
-                      unread > 0 ? `Notifications, ${unread} unread` : "Notifications"
+                      unread > 0
+                        ? `${t("action.notifications")}, ${unread} unread`
+                        : t("action.notifications")
                     }
                     aria-expanded={bellOpen}
                     aria-haspopup="dialog"
@@ -374,10 +404,10 @@ export function AppShell({
                     <div
                       className="absolute right-0 z-30 mt-2 w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-xl"
                       role="dialog"
-                      aria-label="Notifications"
+                      aria-label={t("action.notifications")}
                     >
                       <div className="mb-2 flex items-center justify-between px-2">
-                        <p className="text-sm font-semibold">Notifications</p>
+                        <p className="text-sm font-semibold">{t("action.notifications")}</p>
                         <button
                           className="text-xs text-[var(--accent-strong)]"
                           onClick={async () => {
@@ -386,13 +416,13 @@ export function AppShell({
                             setNotifications((items) => items.map((n) => ({ ...n, read: true })));
                           }}
                         >
-                          Mark all read
+                          {t("action.markAllRead")}
                         </button>
                       </div>
                       <div className="max-h-72 space-y-1 overflow-auto">
                         {notifications.length === 0 ? (
                           <p className="px-2 py-6 text-center text-sm text-[var(--muted)]">
-                            No notifications
+                            {t("shell.notificationsEmpty")}
                           </p>
                         ) : (
                           notifications.map((item) => (
@@ -424,9 +454,55 @@ export function AppShell({
               </div>
             </div>
           </header>
-          <main id="main-content" className="flex-1 px-4 py-6 md:px-8 md:py-8" tabIndex={-1} aria-label={t("a11y.main")}>
+          <main
+            id="main-content"
+            className="safe-px flex-1 px-4 py-6 md:px-8 md:py-8"
+            tabIndex={-1}
+            aria-label={t("a11y.main")}
+          >
             {children}
           </main>
+
+          {/* Mobile bottom navigation */}
+          <nav
+            aria-label={t("a11y.bottomNav")}
+            className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border)] bg-[var(--surface)]/95 backdrop-blur safe-pb lg:hidden"
+          >
+            <ul className="mx-auto grid max-w-lg grid-cols-5 gap-1 px-2 py-1.5">
+              {mobilePrimary.map((item) => {
+                const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const Icon = item.icon;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "touch-target flex flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-2 text-[10px] font-semibold",
+                        active
+                          ? "bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+                          : "text-[var(--muted)]"
+                      )}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      <Icon className="h-4 w-4" aria-hidden />
+                      <span className="truncate">{t(item.labelKey)}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+              <li>
+                <button
+                  type="button"
+                  className="touch-target flex w-full flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-2 text-[10px] font-semibold text-[var(--muted)]"
+                  onClick={() => setOpen(true)}
+                  aria-label={t("action.more")}
+                >
+                  <Menu className="h-4 w-4" aria-hidden />
+                  <span>{t("action.more")}</span>
+                </button>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
     </div>

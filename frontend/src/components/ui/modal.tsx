@@ -63,7 +63,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 p-3 backdrop-blur-[2px] sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 p-0 backdrop-blur-[2px] sm:items-center sm:p-3"
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
@@ -75,10 +75,14 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descId : undefined}
-        className={`animate-rise w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] shadow-2xl ${
+        className={`animate-rise safe-pb w-full rounded-t-3xl border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] shadow-2xl sm:rounded-2xl ${
           wide ? "max-w-3xl" : "max-w-lg"
-        }`}
+        } max-h-[92vh] overflow-auto`}
       >
+        {/* Mobile bottom-sheet drag affordance */}
+        <div className="flex justify-center pt-2 sm:hidden" aria-hidden>
+          <span className="h-1.5 w-12 rounded-full bg-[var(--border)]" />
+        </div>
         <div className="flex items-start justify-between gap-4 border-b border-[var(--border)] px-5 py-4">
           <div>
             <h2 id={titleId} className="font-display text-xl text-[var(--foreground)]">
@@ -90,7 +94,13 @@ export function Modal({
               </p>
             ) : null}
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close dialog">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="touch-target"
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
