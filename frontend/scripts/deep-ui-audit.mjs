@@ -130,10 +130,20 @@ async function checkDarkWhites(page, label) {
 }
 
 async function openMore(page) {
-  const more = page.locator("nav").getByRole("button", { name: /^More$/i })
-    .or(page.getByRole("button", { name: /^More$/i }));
+  const more = page.getByRole("button", { name: /^More$/i });
   if (await more.first().isVisible().catch(() => false)) {
-    await more.first().click();
+    // Fixed bottom nav can fail Playwright actionability after scrollIntoView;
+    // prefer a real tap at the button center, then force as fallback.
+    try {
+      const box = await more.first().boundingBox();
+      if (box) {
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      } else {
+        await more.first().click({ force: true });
+      }
+    } catch {
+      await more.first().click({ force: true });
+    }
     await page.waitForTimeout(450);
     return true;
   }
@@ -229,9 +239,13 @@ async function auditMobile(browser) {
 
   // primary tabs
   for (const name of ["Doctors", "Patients", "Appointments"]) {
-    const tab = page.locator("nav").getByText(name, { exact: true }).first();
+    const tab = page.locator('nav[aria-label*="mobile" i] a, nav[aria-label*="Primary mobile" i] a')
+      .filter({ hasText: new RegExp(`^${name}$`, "i") })
+      .first();
     if (await tab.isVisible().catch(() => false)) {
-      await tab.click();
+      const box = await tab.boundingBox();
+      if (box) await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      else await tab.click({ force: true });
       await page.waitForTimeout(800);
       await shot(page, `m-route-${name.toLowerCase()}`);
       await measureOverflow(page, `mobile/${name.toLowerCase()}`);

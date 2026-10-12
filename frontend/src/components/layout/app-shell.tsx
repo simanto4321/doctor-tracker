@@ -472,7 +472,7 @@ export function AppShell({
           {/* Mobile bottom navigation */}
           <nav
             aria-label={t("a11y.bottomNav")}
-            className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border)] bg-[var(--surface)]/95 backdrop-blur safe-pb lg:hidden"
+            className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--border)] bg-[var(--surface)] backdrop-blur safe-pb lg:hidden"
           >
             <ul className="mx-auto grid max-w-lg grid-cols-5 gap-1 px-2 py-1.5">
               {mobilePrimary.map((item) => {

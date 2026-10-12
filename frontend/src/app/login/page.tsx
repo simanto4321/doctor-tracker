@@ -163,17 +163,17 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-5 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-5 flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-2">
               <Link
                 href="/forgot-password"
-                className="font-semibold text-[var(--accent-strong)] underline-offset-4 hover:underline"
+                className="inline-flex min-h-11 items-center font-semibold text-[var(--accent-strong)] underline-offset-4 hover:underline"
               >
                 Forgot password?
               </Link>
               <button
                 type="button"
                 onClick={() => setShowDemo((v) => !v)}
-                className="text-left text-[var(--muted)] transition hover:text-[var(--foreground)] sm:text-right"
+                className="inline-flex min-h-11 items-center text-left text-[var(--muted)] transition hover:text-[var(--foreground)] sm:justify-end sm:text-right"
               >
                 {showDemo ? "Hide demo logins" : "Demo logins"}
               </button>
